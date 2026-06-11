@@ -1,0 +1,130 @@
+{
+  "nominal": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_nominal\\h1.xml",
+    "name": "nominal",
+    "label": "Nominal H1",
+    "leg_length_scale": 1.0,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": 0.0012000085647466945,
+    "total_mass_kg": 51.437
+  },
+  "tall_legs": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_tall_legs\\h1.xml",
+    "name": "tall_legs",
+    "label": "Longer legs",
+    "leg_length_scale": 1.12,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": 0.09720000856474667,
+    "total_mass_kg": 52.84651999999999
+  },
+  "short_legs": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_short_legs\\h1.xml",
+    "name": "short_legs",
+    "label": "Shorter legs",
+    "leg_length_scale": 0.9,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": -0.07879999143525337,
+    "total_mass_kg": 50.26239999999999
+  },
+  "long_arms": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_long_arms\\h1.xml",
+    "name": "long_arms",
+    "label": "Longer arms",
+    "leg_length_scale": 1.0,
+    "arm_length_scale": 1.15,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": 0.0012000085647466945,
+    "total_mass_kg": 51.88940000000001
+  },
+  "broad_shoulders": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_broad_shoulders\\h1.xml",
+    "name": "broad_shoulders",
+    "label": "Broader shoulders",
+    "leg_length_scale": 1.0,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.15,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": 0.0012000085647466945,
+    "total_mass_kg": 51.437
+  },
+  "big_feet": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_big_feet\\h1.xml",
+    "name": "big_feet",
+    "label": "Larger feet",
+    "leg_length_scale": 1.0,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.15,
+      1.1,
+      1.05
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": 0.004700008895293898,
+    "total_mass_kg": 51.729797999999995
+  },
+  "heavy_torso": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_heavy_torso\\h1.xml",
+    "name": "heavy_torso",
+    "label": "Heavier torso",
+    "leg_length_scale": 1.0,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.35,
+    "floor_adjustment_meters": 0.0012000085647466945,
+    "total_mass_kg": 57.663199999999996
+  },
+  "combined": {
+    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_combined\\h1.xml",
+    "name": "combined",
+    "label": "Combined moderate variation",
+    "leg_length_scale": 1.08,
+    "arm_length_scale": 0.94,
+    "shoulder_width_scale": 1.08,
+    "foot_scale_xyz": [
+      1.08,
+      1.05,
+      1.0
+    ],
+    "torso_mass_scale": 1.15,
+    "floor_adjustment_meters": 0.06520000844596441,
+    "total_mass_kg": 54.98364800000001
+  }
+}

@@ -1,0 +1,12 @@
+[submodule "RL-X"]
+	path = RL-X
+	url = https://github.com/nico-bohlinger/RL-X.git
+[submodule "loco-mujoco"]
+	path = loco-mujoco
+	url = https://github.com/robfiras/loco-mujoco.git
+[submodule "loco_mjx"]
+	path = loco_mjx
+	url = https://github.com/nico-bohlinger/loco_mjx.git
+[submodule "loco_mjx_create_er_images"]
+	path = loco_mjx_create_er_images
+	url = https://github.com/nico-bohlinger/loco_mjx.git

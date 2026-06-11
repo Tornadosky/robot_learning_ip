@@ -1,0 +1,69 @@
+# Python / virtual environments
+.venv/
+.smpl-convert-venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+._*
+
+# Machine-local LocoMuJoCo paths (set by scripts/setup_data.py)
+loco-mujoco/loco_mujoco/LOCOMUJOCO_VARIABLES.yaml
+
+# ---------------------------------------------------------------------------
+# Large / licensed datasets (fetch with: python scripts/setup_data.py)
+# ---------------------------------------------------------------------------
+external_data/amass/**
+!external_data/amass/.gitkeep
+!external_data/amass/README.md
+!external_data/amass/LICENSE.txt
+
+external_data/smpl/**
+!external_data/smpl/.gitkeep
+!external_data/smpl/README.md
+
+external_data/amass_converted/**
+!external_data/amass_converted/.gitkeep
+
+# Generated retargeting / morphology sweep artifacts
+external_data/amass_extreme/**
+!external_data/amass_extreme/.gitkeep
+external_data/retarget_proof/**
+!external_data/retarget_proof/.gitkeep
+external_data/morphology_sweep/**
+!external_data/morphology_sweep/.gitkeep
+
+# Generated media (recreated by scripts in scripts/)
+videos/**
+!videos/.gitkeep
+images/*.png
+images/*.jpg
+images/*.jpeg
+images/*.mp4
+images/*.gif
+
+# ---------------------------------------------------------------------------
+# Subproject experiment outputs
+# ---------------------------------------------------------------------------
+wandb/
+**/logs/
+**/ckpts/
+**/outputs/
+**/multirun/
+**/runs/
+loco-mujoco/loco_mujoco/datasets/
+loco-mujoco/mushroom_rl_recordings/
+loco-mujoco/LocoMuJoCo_recordings/
+loco-mujoco/record_all/
+loco-mujoco/loco_mujoco/models/myo_model/
+loco-mujoco/loco_mujoco/smpl/conf_paths.yaml
