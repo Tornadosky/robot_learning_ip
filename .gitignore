@@ -52,6 +52,27 @@ images/*.jpeg
 images/*.mp4
 images/*.gif
 
+# Media files anywhere in the repo
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.gif
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.bmp
+*.tif
+*.tiff
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+*.aac
+
 # ---------------------------------------------------------------------------
 # Subproject experiment outputs
 # ---------------------------------------------------------------------------
@@ -61,9 +82,10 @@ wandb/
 **/outputs/
 **/multirun/
 **/runs/
+LocoMuJoCo_recordings/
+**/LocoMuJoCo_recordings/
 loco-mujoco/loco_mujoco/datasets/
 loco-mujoco/mushroom_rl_recordings/
-loco-mujoco/LocoMuJoCo_recordings/
 loco-mujoco/record_all/
 loco-mujoco/loco_mujoco/models/myo_model/
 loco-mujoco/loco_mujoco/smpl/conf_paths.yaml
