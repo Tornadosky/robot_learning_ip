@@ -3,7 +3,7 @@
 	url = https://github.com/nico-bohlinger/RL-X.git
 [submodule "loco-mujoco"]
 	path = loco-mujoco
-	url = https://github.com/robfiras/loco-mujoco.git
+	url = https://github.com/khaendler/Embodiment-aware-universal-humanoid-policy.git
 [submodule "loco_mjx"]
 	path = loco_mjx
 	url = https://github.com/nico-bohlinger/loco_mjx.git
