@@ -13,6 +13,7 @@ provide.  Mesh-aware reference retargeting is a separate, offline layer.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -32,11 +33,71 @@ from loco_mujoco.environments.base import LocoCarry
 from loco_mujoco.environments.humanoids import MjxUnitreeH1
 
 
-MORPHOLOGY_NAMES = (
-    "leg_length_scale",
-    "arm_length_scale",
-    "shoulder_width_scale",
-    "torso_mass_scale",
+#: ``(name, default_low, default_high)`` per randomized dimension.
+#:
+#: The first four dims are the legacy 4-scalar descriptor and MUST keep their
+#: order -- ``root_height_offset`` and every stored catalog index
+#: ``leg_length_scale`` at position 0.
+#:
+#: Dims 5+ (2026-08-09): one further kinematic dim (torso length) plus six
+#: retarget-free dynamics dims. The split follows the pipeline_blocks B2
+#: classification: mass/inertia/damping/armature/strength/friction/COM changes
+#: need NO reference retargeting, while length dims are absorbed by the
+#: FK-target semantics (MorphMimicReward) or an explicit GN IK retarget.
+#:
+#: Dim 12 (2026-08-10, pipeline_v3): ``joint_range_shift`` — the first dim that
+#: alters reference FEASIBILITY. Both bounds of every LIMITED hinge joint move
+#: by the same additive offset in radians, so a body can simply be unable to
+#: reach part of the shared reference's joint trajectory (pipeline_blocks B2
+#: measured 18% of full-range draws making the knee's start pose infeasible).
+#: That is only sound because ``MorphMimicReward`` clamps the reference joint
+#: targets to the CURRENT body's ranges in-graph before scoring — training with
+#: this dim and the stock ``MimicReward`` would score bodies against poses they
+#: cannot enter. One scalar (rather than 19 per-joint draws) keeps the dim
+#: observable in the descriptor the policy already sees; per-joint shifts would
+#: need 19 further descriptor dims and are deferred.
+#: Joint-AXIS rotation remains absent (FK targets absorb axes by construction,
+#: but the XML generator mirror is not written yet).
+MORPHOLOGY_SPEC = (
+    ("leg_length_scale", 0.75, 1.35),
+    ("arm_length_scale", 0.75, 1.35),
+    ("shoulder_width_scale", 0.75, 1.35),
+    ("torso_mass_scale", 0.70, 1.50),
+    ("torso_length_scale", 0.85, 1.20),
+    ("total_mass_scale", 0.80, 1.30),
+    ("damping_scale", 0.50, 2.00),
+    ("armature_scale", 0.50, 2.00),
+    ("strength_scale", 0.70, 1.30),
+    ("friction_scale", 0.60, 1.40),
+    ("torso_com_x_offset", -0.03, 0.03),
+)
+
+#: ``joint_range_shift`` is appended ONLY when H1_JOINT_RANGE_DIM=1.
+#:
+#: The dim has to be opt-in rather than default-pinned because the descriptor
+#: is part of the observation: a 12th entry moves the observation from 445 to
+#: 446 floats and makes every previously trained checkpoint unloadable (the
+#: pipeline_v2 "obs 438 vs 445" trap, one budget-cycle expensive). With the
+#: flag off this module is byte-for-byte the 11-dim sampler that pipeline_v1/v2
+#: checkpoints were trained under; with it on, Phase-3 arms get the new dim.
+JOINT_RANGE_DIM_ENABLED = os.environ.get("H1_JOINT_RANGE_DIM", "0") == "1"
+
+#: Additive offset in radians applied to BOTH bounds of every limited hinge
+#: joint. Symmetric, so the nominal body sits at the centre of the box.
+JOINT_RANGE_SHIFT_LIMITS = (-0.20, 0.20)
+
+if JOINT_RANGE_DIM_ENABLED:
+    MORPHOLOGY_SPEC = MORPHOLOGY_SPEC + (
+        ("joint_range_shift",) + JOINT_RANGE_SHIFT_LIMITS,
+    )
+
+MORPHOLOGY_NAMES = tuple(name for name, _, _ in MORPHOLOGY_SPEC)
+
+#: Dims whose values are multiplicative scales (must stay positive). The one
+#: exception, ``torso_com_x_offset``, is an additive metre offset and may be
+#: negative or zero.
+MORPHOLOGY_SCALE_MASK = np.array(
+    [name.endswith("_scale") for name in MORPHOLOGY_NAMES]
 )
 
 #: ``continuous``       - draw a fresh uniform body at every reset (the original path).
@@ -47,8 +108,8 @@ CATALOG_MODES = ("continuous", "fixed_balanced", "catalog_resample")
 
 @dataclass(frozen=True)
 class MorphologyBounds:
-    low: tuple[float, float, float, float] = (0.85, 0.85, 0.85, 0.70)
-    high: tuple[float, float, float, float] = (1.20, 1.20, 1.20, 1.50)
+    low: tuple[float, ...] = tuple(lo for _, lo, _ in MORPHOLOGY_SPEC)
+    high: tuple[float, ...] = tuple(hi for _, _, hi in MORPHOLOGY_SPEC)
 
     def validate(self) -> None:
         if len(self.low) != len(MORPHOLOGY_NAMES) or len(self.high) != len(
@@ -57,9 +118,13 @@ class MorphologyBounds:
             raise ValueError(
                 f"Morphology bounds must have {len(MORPHOLOGY_NAMES)} values."
             )
-        if np.any(np.asarray(self.low) <= 0.0):
-            raise ValueError("Morphology scales must be positive.")
-        if np.any(np.asarray(self.high) <= np.asarray(self.low)):
+        low = np.asarray(self.low)
+        high = np.asarray(self.high)
+        if not (np.all(np.isfinite(low)) and np.all(np.isfinite(high))):
+            raise ValueError("Morphology bounds must be finite.")
+        if np.any(low[MORPHOLOGY_SCALE_MASK] <= 0.0):
+            raise ValueError("Morphology scale dims must stay positive.")
+        if np.any(high <= low):
             raise ValueError(
                 "Every morphology upper bound must exceed its lower bound."
             )
@@ -85,6 +150,9 @@ class URMAInputLayout:
     joint_position_indices: tuple[int, ...]
     joint_velocity_indices: tuple[int, ...]
     general_indices: tuple[int, ...]
+    #: Observation dims visible to the CRITIC ONLY (privileged reference
+    #: block appended by the grouped env when the actor's copy is blanked).
+    critic_extra_indices: tuple[int, ...] = ()
 
     @property
     def joint_feature_stop(self) -> int:
@@ -168,8 +236,13 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
                     f"Catalog descriptors must be (N, {len(MORPHOLOGY_NAMES)}); "
                     f"got {catalog.shape}."
                 )
-            if not np.all(np.isfinite(catalog)) or np.any(catalog <= 0.0):
-                raise ValueError("Catalog descriptors must be finite and positive.")
+            scale_cols = MORPHOLOGY_SCALE_MASK[: catalog.shape[1]]
+            if not np.all(np.isfinite(catalog)) or np.any(
+                catalog[:, scale_cols] <= 0.0
+            ):
+                raise ValueError(
+                    "Catalog descriptors must be finite, with positive scales."
+                )
             if self._catalog_stride < 1:
                 raise ValueError("catalog_stride must be at least 1.")
             self._catalog_np = catalog
@@ -193,6 +266,18 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
         self._base_body_mass = self.sys.body_mass
         self._base_body_inertia = self.sys.body_inertia
         self._base_site_pos = self.sys.site_pos
+        self._base_dof_damping = self.sys.dof_damping
+        self._base_dof_armature = self.sys.dof_armature
+        self._base_actuator_gainprm = self.sys.actuator_gainprm
+        self._base_geom_friction = self.sys.geom_friction
+        self._base_jnt_range = self.sys.jnt_range
+        # Only LIMITED, single-dof joints may be shifted: the free root joint
+        # has no meaningful range, and an unlimited joint's range row is unused.
+        self._shiftable_jnt_mask = jnp.asarray(
+            (np.asarray(self.sys.jnt_limited) != 0)
+            & (np.asarray(self.sys.jnt_type) != mujoco.mjtJoint.mjJNT_FREE),
+            dtype=jnp.float32,
+        )[:, None]
 
         self._base_observation_dim = int(self.info.observation_space.shape[0])
         extra_low = []
@@ -257,6 +342,7 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
             [self._site_id(f"{side}_hand_mimic") for side in ("left", "right")],
             dtype=np.int32,
         )
+        self._upper_body_site_id = self._site_id("upper_body_mimic")
         self._torso_id = self._body_id("torso_link")
 
     @staticmethod
@@ -323,8 +409,8 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
         self._num_urma_joints = action_dim
         # position(3), axis(3), child count, nominal, force, four passive
         # parameters, range(2), control range(2), total/body mass, inertia(3),
-        # and the four explicit online morphology coordinates.
-        self._urma_joint_description_dim = 26
+        # and the explicit online morphology coordinates.
+        self._urma_joint_description_dim = 22 + len(MORPHOLOGY_NAMES)
         self._urma_joint_state_dim = 3  # position, velocity, previous action
         self._urma_joint_feature_dim = (
             self._urma_joint_description_dim + self._urma_joint_state_dim + 1
@@ -464,7 +550,22 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
         )
 
     def _apply_morphology(self, model, morphology: jax.Array):
-        leg_scale, arm_scale, shoulder_scale, torso_mass_scale = morphology
+        (
+            leg_scale,
+            arm_scale,
+            shoulder_scale,
+            torso_mass_scale,
+            torso_len_scale,
+            total_mass_scale,
+            damping_scale,
+            armature_scale,
+            strength_scale,
+            friction_scale,
+            torso_com_x,
+        ) = morphology[:11]
+        joint_range_shift = (
+            morphology[11] if JOINT_RANGE_DIM_ENABLED else 0.0
+        )
 
         body_pos = self._base_body_pos
         leg_pos_scale = jnp.asarray([1.0, 1.0, leg_scale])
@@ -478,9 +579,11 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
         body_pos = body_pos.at[self._forearm_ids].set(
             self._base_body_pos[self._forearm_ids] * arm_scale
         )
+        # The shoulder-pitch attachment carries both the shoulder width (y) and
+        # the torso length (z): a longer torso raises where the arms hang.
         body_pos = body_pos.at[self._shoulder_ids].set(
             self._base_body_pos[self._shoulder_ids]
-            * jnp.asarray([1.0, shoulder_scale, 1.0])
+            * jnp.asarray([1.0, shoulder_scale, torso_len_scale])
         )
 
         # Match the existing XML generator's simple volume/inertia scaling.
@@ -488,6 +591,7 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
         body_scale = body_scale.at[self._leg_inertial_ids, 2].set(leg_scale)
         body_scale = body_scale.at[self._upper_arm_ids, 2].set(arm_scale)
         body_scale = body_scale.at[self._forearm_ids, 0].set(arm_scale)
+        body_scale = body_scale.at[self._torso_id, 2].set(torso_len_scale)
         volume_scale = jnp.prod(body_scale, axis=1)
         inertia_scale = volume_scale * jnp.square(jnp.mean(body_scale, axis=1))
         body_ipos = self._base_body_ipos * body_scale
@@ -495,19 +599,47 @@ class OnlineMorphMjxUnitreeH1(MjxUnitreeH1):
         body_inertia = self._base_body_inertia * inertia_scale[:, None]
         body_mass = body_mass.at[self._torso_id].multiply(torso_mass_scale)
         body_inertia = body_inertia.at[self._torso_id].multiply(torso_mass_scale)
+        # Whole-robot mass scale on top of the shape-driven scaling.
+        body_mass = body_mass * total_mass_scale
+        body_inertia = body_inertia * total_mass_scale
+        body_ipos = body_ipos.at[self._torso_id, 0].add(torso_com_x)
 
         site_pos = self._base_site_pos
         site_pos = site_pos.at[self._hand_site_ids].set(
             self._base_site_pos[self._hand_site_ids]
             * jnp.asarray([arm_scale, 1.0, 1.0])
         )
+        site_pos = site_pos.at[self._upper_body_site_id].set(
+            self._base_site_pos[self._upper_body_site_id]
+            * jnp.asarray([1.0, 1.0, torso_len_scale])
+        )
+
+        # Both bounds move together, so the joint keeps its span but its
+        # reachable interval slides. Unlimited and free joints are masked out.
+        # Skipped entirely when the dim is off, so the returned model is
+        # identical to the pre-v3 one (no new array in the pytree).
+        extra = (
+            {"jnt_range": self._base_jnt_range
+                          + joint_range_shift * self._shiftable_jnt_mask}
+            if JOINT_RANGE_DIM_ENABLED
+            else {}
+        )
 
         return model.replace(
+            **extra,
             body_pos=body_pos,
             body_ipos=body_ipos,
             body_mass=body_mass,
             body_inertia=body_inertia,
             site_pos=site_pos,
+            dof_damping=self._base_dof_damping * damping_scale,
+            dof_armature=self._base_dof_armature * armature_scale,
+            actuator_gainprm=self._base_actuator_gainprm.at[:, 0].multiply(
+                strength_scale
+            ),
+            geom_friction=self._base_geom_friction.at[:, 0].multiply(
+                friction_scale
+            ),
         )
 
     def _urma_joint_descriptions(self, morphology: jax.Array) -> jax.Array:

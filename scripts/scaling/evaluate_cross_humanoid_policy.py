@@ -86,6 +86,41 @@ def _env_args(args, manifest):
         robot_one_hot=bool(manifest.get("robot_one_hot", True)),
         append_joint_features=bool(manifest.get("append_joint_features", False)),
         reserve_robots=reserve,
+        clip_windows=manifest.get("clip_windows"),
+        morphology=manifest.get("morphology"),
+        blank_goal=bool(manifest.get("blank_goal_observation", False)),
+        goal_for_critic=bool(manifest.get("goal_for_critic", False)),
+        actor_latent_dim=int(manifest.get("actor_latent_dim", 0)),
+        latent_codes=manifest.get("latent_codes"),
+        reward_type=str(manifest.get("reward_type", "MimicReward")),
+        # The goal class sets the observation WIDTH (MorphGoalTrajMimicRootErr
+        # appends 3 root-error dims), so replaying a checkpoint under the stock
+        # goal would build a network of the wrong shape. The terminal handler
+        # and deviation threshold do not change the width, but evaluating a
+        # policy under a different termination rule than it trained on measures
+        # something else, so both are carried over too.
+        goal_type=str(manifest.get("goal_type", "GoalTrajMimic")),
+        terminal_handler=manifest.get("terminal_handler"),
+        max_root_deviation=manifest.get("max_root_pos_deviation"),
+        # Control/action semantics and reference preprocessing MUST match
+        # training or the eval measures a different controller entirely: a
+        # PD-trained policy replayed under torque control scored 6.8 steps
+        # against its own training-log 306 (found 2026-08-18). Every field
+        # below was previously dropped and silently defaulted.
+        pd_control=manifest.get("pd_control") or None,
+        pd_gain_scale=float(manifest.get("pd_gain_scale", 1.0) or 1.0),
+        pd_action_scale=manifest.get("pd_action_scale"),
+        root_frame=str(manifest.get("root_frame", "absolute")),
+        reference_grounding=str(manifest.get("reference_grounding", "none")),
+        foot_model=str(manifest.get("foot_model", "stock")),
+        n_substeps=manifest.get("n_substeps"),
+        env_horizon=manifest.get("env_horizon"),
+        root_rot_margin_degrees=manifest.get("root_rot_margin_degrees"),
+        terminal_tilt_degrees=manifest.get("terminal_tilt_degrees"),
+        morphology_catalog_file=manifest.get("morphology_catalog_file"),
+        joint_target_obs=bool(manifest.get("joint_target_obs", False)),
+        # Evaluation rebuilds envs repeatedly; the census belongs to training.
+        admission_census_resets=0,
     )
 
 

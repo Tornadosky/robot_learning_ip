@@ -84,7 +84,22 @@ class EmbodimentCatalog:
             raise ValueError("Catalog body IDs must be unique.")
         if not np.all(np.isfinite(descriptors)):
             raise ValueError("Catalog descriptors must be finite.")
-        if np.any(descriptors <= 0.0):
+        # Positivity applies to the multiplicative SCALE dims only. The
+        # additive dims (torso_com_x_offset, joint_range_shift) are legitimately
+        # negative or zero, so the old blanket check rejected valid bodies --
+        # latent since the 4->11 dim expansion, because nothing exercised the
+        # catalog path with an additive dim present. Same rule as
+        # online_h1.MORPHOLOGY_SCALE_MASK, derived from the names held here so
+        # this module keeps no import back into the env.
+        scale_mask = np.array(
+            [str(n).endswith("_scale") for n in self.descriptor_names], dtype=bool
+        )
+        if scale_mask.shape[0] != descriptors.shape[1]:
+            raise ValueError(
+                "descriptor_names must have one entry per descriptor column; "
+                f"got {scale_mask.shape[0]} names for {descriptors.shape[1]} columns."
+            )
+        if np.any(descriptors[:, scale_mask] <= 0.0):
             raise ValueError("Every morphology scale must be strictly positive.")
         object.__setattr__(self, "descriptors", descriptors)
         object.__setattr__(self, "body_ids", body_ids)

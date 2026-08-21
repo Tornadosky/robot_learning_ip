@@ -80,6 +80,12 @@ _G1_ARM = [(60.0, 2.0), (60.0, 2.0), (60.0, 2.0), (60.0, 2.0), (40.0, 1.0)]
 _G1_PAIRS = _G1_LEG + _G1_LEG + [(150.0, 4.0)] + _G1_ARM + _G1_ARM  # 23 actuators
 PD_GAINS = {
     "g1": dict(p_gain=[p for p, _ in _G1_PAIRS], d_gain=[d for _, d in _G1_PAIRS]),
+    # H1 never had native PD gains in this stack (the DeepMimic example drives it
+    # with torque). loco_mjx/urma2 drives H1 with uniform position actuators
+    # kp=60 kv=2.0 across all 19 joints. These entries are urma2's values divided
+    # by 3 so that a submission using the shared production PD_GAIN_SCALE=3.0
+    # (the G1 convention) lands exactly on urma2's 60/2.0.
+    "h1": dict(p_gain=[20.0] * 19, d_gain=[2.0 / 3.0] * 19),
 }
 
 # Actuator-index groups in the G1 _G1_PAIRS order, so PD gains can be stiffened

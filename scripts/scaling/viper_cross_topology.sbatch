@@ -28,6 +28,8 @@ UPDATE_EPOCHS=${UPDATE_EPOCHS:-4}
 HIDDEN=${HIDDEN:-"256 128"}
 LR=${LR:-1e-4}
 TAG=${TAG:-"${BACKBONE}_s${SEED}"}
+# free-form extra flags (motion latent, morphology, clip windows, ...)
+EXTRA=${EXTRA:-}
 
 EXTRA_ARGS=()
 if [[ "$ONE_HOT" == "1" ]]; then
@@ -51,6 +53,7 @@ python scripts/scaling/parallel_cross_humanoid_train.py \
   --learnable-std \
   --seed "$SEED" \
   "${EXTRA_ARGS[@]}" \
+  $EXTRA \
   --run-tag "viper_${TAG}_${SLURM_JOB_ID}" \
   --output-dir "$ROOT/crosstopo_${TAG}_${SLURM_JOB_ID}"
 

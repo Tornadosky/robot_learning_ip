@@ -32,27 +32,27 @@
     <material name="MatPlane" texture="texplane" texuniform="true"/>
     <material name="black" rgba="0.1 0.1 0.1 1"/>
     <material name="white"/>
-    <mesh name="pelvis" file="pelvis.stl"/>
-    <mesh name="left_hip_yaw_link" file="left_hip_yaw_link.stl"/>
-    <mesh name="left_hip_roll_link" file="left_hip_roll_link.stl"/>
-    <mesh name="left_hip_pitch_link" file="left_hip_pitch_link.stl"/>
-    <mesh name="left_knee_link" file="left_knee_link.stl"/>
-    <mesh name="left_ankle_link" file="left_ankle_link.stl"/>
-    <mesh name="right_hip_yaw_link" file="right_hip_yaw_link.stl"/>
-    <mesh name="right_hip_roll_link" file="right_hip_roll_link.stl"/>
-    <mesh name="right_hip_pitch_link" file="right_hip_pitch_link.stl"/>
-    <mesh name="right_knee_link" file="right_knee_link.stl"/>
-    <mesh name="right_ankle_link" file="right_ankle_link.stl"/>
-    <mesh name="torso_link" file="torso_link.stl"/>
-    <mesh name="left_shoulder_pitch_link" file="left_shoulder_pitch_link.stl"/>
-    <mesh name="left_shoulder_roll_link" file="left_shoulder_roll_link.stl"/>
-    <mesh name="left_shoulder_yaw_link" file="left_shoulder_yaw_link.stl"/>
-    <mesh name="left_elbow_link" file="left_elbow_link.stl"/>
-    <mesh name="right_shoulder_pitch_link" file="right_shoulder_pitch_link.stl"/>
-    <mesh name="right_shoulder_roll_link" file="right_shoulder_roll_link.stl"/>
-    <mesh name="right_shoulder_yaw_link" file="right_shoulder_yaw_link.stl"/>
-    <mesh name="right_elbow_link" file="right_elbow_link.stl"/>
-    <mesh name="logo_link" file="logo_link.stl"/>
+    <mesh name="pelvis" content_type="model/stl" file="pelvis.stl"/>
+    <mesh name="left_hip_yaw_link" content_type="model/stl" file="left_hip_yaw_link.stl"/>
+    <mesh name="left_hip_roll_link" content_type="model/stl" file="left_hip_roll_link.stl"/>
+    <mesh name="left_hip_pitch_link" content_type="model/stl" file="left_hip_pitch_link.stl"/>
+    <mesh name="left_knee_link" content_type="model/stl" file="left_knee_link.stl"/>
+    <mesh name="left_ankle_link" content_type="model/stl" file="left_ankle_link.stl"/>
+    <mesh name="right_hip_yaw_link" content_type="model/stl" file="right_hip_yaw_link.stl"/>
+    <mesh name="right_hip_roll_link" content_type="model/stl" file="right_hip_roll_link.stl"/>
+    <mesh name="right_hip_pitch_link" content_type="model/stl" file="right_hip_pitch_link.stl"/>
+    <mesh name="right_knee_link" content_type="model/stl" file="right_knee_link.stl"/>
+    <mesh name="right_ankle_link" content_type="model/stl" file="right_ankle_link.stl"/>
+    <mesh name="torso_link" content_type="model/stl" file="torso_link.stl"/>
+    <mesh name="left_shoulder_pitch_link" content_type="model/stl" file="left_shoulder_pitch_link.stl"/>
+    <mesh name="left_shoulder_roll_link" content_type="model/stl" file="left_shoulder_roll_link.stl"/>
+    <mesh name="left_shoulder_yaw_link" content_type="model/stl" file="left_shoulder_yaw_link.stl"/>
+    <mesh name="left_elbow_link" content_type="model/stl" file="left_elbow_link.stl"/>
+    <mesh name="right_shoulder_pitch_link" content_type="model/stl" file="right_shoulder_pitch_link.stl"/>
+    <mesh name="right_shoulder_roll_link" content_type="model/stl" file="right_shoulder_roll_link.stl"/>
+    <mesh name="right_shoulder_yaw_link" content_type="model/stl" file="right_shoulder_yaw_link.stl"/>
+    <mesh name="right_elbow_link" content_type="model/stl" file="right_elbow_link.stl"/>
+    <mesh name="logo_link" content_type="model/stl" file="logo_link.stl"/>
   </asset>
 
   <worldbody>

@@ -27,6 +27,14 @@ class H1MorphologyPreset:
     shoulder_width_scale: float = 1.0
     foot_scale_xyz: tuple[float, float, float] = (1.0, 1.0, 1.0)
     torso_mass_scale: float = 1.0
+    # Expanded dims (2026-08-09), mirroring online_h1.MORPHOLOGY_SPEC.
+    torso_length_scale: float = 1.0
+    total_mass_scale: float = 1.0
+    damping_scale: float = 1.0
+    armature_scale: float = 1.0
+    strength_scale: float = 1.0
+    friction_scale: float = 1.0
+    torso_com_x_offset: float = 0.0
 
     @property
     def details(self) -> str:
@@ -41,6 +49,20 @@ class H1MorphologyPreset:
             changes.append("feet " + "/".join(f"{value:.2f}" for value in self.foot_scale_xyz))
         if self.torso_mass_scale != 1.0:
             changes.append(f"torso mass {self.torso_mass_scale:.2f}x")
+        if self.torso_length_scale != 1.0:
+            changes.append(f"torso len {self.torso_length_scale:.2f}x")
+        if self.total_mass_scale != 1.0:
+            changes.append(f"total mass {self.total_mass_scale:.2f}x")
+        if self.damping_scale != 1.0:
+            changes.append(f"damping {self.damping_scale:.2f}x")
+        if self.armature_scale != 1.0:
+            changes.append(f"armature {self.armature_scale:.2f}x")
+        if self.strength_scale != 1.0:
+            changes.append(f"strength {self.strength_scale:.2f}x")
+        if self.friction_scale != 1.0:
+            changes.append(f"friction {self.friction_scale:.2f}x")
+        if self.torso_com_x_offset != 0.0:
+            changes.append(f"COM x {self.torso_com_x_offset*100:+.1f} cm")
         return ", ".join(changes) or "standard H1"
 
 
@@ -171,6 +193,46 @@ def create_h1_variant_xml(
         torso = _find_named(spec.bodies, "torso_link")
         torso.mass *= preset.torso_mass_scale
         torso.inertia = np.asarray(torso.inertia) * preset.torso_mass_scale
+
+    if preset.torso_length_scale != 1.0:
+        length = preset.torso_length_scale
+        for side in ("left", "right"):
+            body = _find_named(spec.bodies, f"{side}_shoulder_pitch_link")
+            body.pos = np.asarray(body.pos) * np.array([1.0, 1.0, length])
+        _scale_inertial(_find_named(spec.bodies, "torso_link"), (1, 1, length))
+        site = _find_named(spec.sites, "upper_body_mimic")
+        site.pos = np.asarray(site.pos) * np.array([1.0, 1.0, length])
+        _scale_meshes(spec, {"torso_link"}, (1, 1, length))
+
+    if preset.total_mass_scale != 1.0:
+        for body in spec.bodies:
+            if body.mass > 0.0:
+                body.mass *= preset.total_mass_scale
+                body.inertia = np.asarray(body.inertia) * preset.total_mass_scale
+
+    if preset.damping_scale != 1.0 or preset.armature_scale != 1.0:
+        for joint in spec.joints:
+            if joint.type != mujoco.mjtJoint.mjJNT_FREE:
+                joint.damping *= preset.damping_scale
+                joint.armature *= preset.armature_scale
+
+    if preset.strength_scale != 1.0:
+        for actuator in spec.actuators:
+            gainprm = np.asarray(actuator.gainprm, dtype=float)
+            gainprm[0] *= preset.strength_scale
+            actuator.gainprm = gainprm
+
+    if preset.friction_scale != 1.0:
+        for geom in spec.geoms:
+            friction = np.asarray(geom.friction, dtype=float)
+            friction[0] *= preset.friction_scale
+            geom.friction = friction
+
+    if preset.torso_com_x_offset != 0.0:
+        torso = _find_named(spec.bodies, "torso_link")
+        ipos = np.asarray(torso.ipos, dtype=float)
+        ipos[0] += preset.torso_com_x_offset
+        torso.ipos = ipos
 
     xml_path.write_text(spec.to_xml(), encoding="utf-8")
     mujoco.MjModel.from_xml_path(str(xml_path))

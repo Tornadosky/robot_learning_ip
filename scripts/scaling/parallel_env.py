@@ -25,7 +25,6 @@ from loco_mujoco.core.wrappers.mjx import BaseWrapper, BaseWrapperState, Metrics
 
 from scaling.joint_descriptions import (
     GENERIC_JOINT_DESCRIPTION_DIM,
-    JOINT_FEATURE_DIM,
     JOINT_STATE_DIM,
     JointBlockSpec,
 )
@@ -126,6 +125,9 @@ class ParallelMorphVecEnv:
         reserved_observation_dim: int = 0,
         reserved_action_dim: int = 0,
         reserved_group_slots: int = 0,
+        blank_goal_observation: bool = False,
+        append_goal_for_critic: bool = False,
+        route_reset_observation_on_done: bool = False,
     ):
         if not envs:
             raise ValueError("At least one morphology environment is required.")
@@ -152,6 +154,57 @@ class ParallelMorphVecEnv:
                 f"got obs={obs_shapes}, act={act_shapes}. Set "
                 "pad_to_max_shapes=True for cross-topology grouping."
             )
+
+        # Raw (pre-wrap) envs are kept for canonical trajectory access: a
+        # shared actor-latent table is only sound if every family indexes the
+        # same (motion, timestamp) grid.
+        self._raw_envs = tuple(envs)
+
+        # When the policy is commanded through a motion latent, the mimic
+        # goal block (next-step reference joints/keypoints, GoalTrajMimic)
+        # would let the actor bypass z entirely.  Blanking zeroes those dims
+        # for EVERY consumer of the observation — the critic is deliberately
+        # NOT privileged; the reward and termination still read the reference
+        # env-side from trajectory data, never through the observation.
+        self.blank_goal_observation = bool(blank_goal_observation)
+        self._blank_goal_indices = None
+        if self.blank_goal_observation:
+            blank_indices = []
+            for env in envs:
+                goal = getattr(env, "_goal", None)
+                obs_ind = None if goal is None else getattr(goal, "obs_ind", None)
+                if obs_ind is None or np.asarray(obs_ind).size == 0:
+                    raise ValueError(
+                        "blank_goal_observation=True but a group env exposes "
+                        "no goal observation indices."
+                    )
+                blank_indices.append(jnp.asarray(np.asarray(obs_ind), dtype=jnp.int32))
+            self._blank_goal_indices = tuple(blank_indices)
+
+        # Privileged critic: the reference block the actor loses to blanking
+        # is re-appended at the very END of the padded observation, where only
+        # critic_extra_indices reads it (the actor's general block and the
+        # joint block both stop before it).
+        self.append_goal_for_critic = bool(append_goal_for_critic)
+        self.critic_goal_dim = 0
+        if self.append_goal_for_critic:
+            if self._blank_goal_indices is None:
+                raise ValueError(
+                    "append_goal_for_critic requires blank_goal_observation "
+                    "(otherwise the actor already sees the reference)."
+                )
+            self.critic_goal_dim = max(
+                int(indices.shape[0]) for indices in self._blank_goal_indices
+            )
+
+        # A trajectory-keyed actor latent must pair the post-reset cursor with
+        # the post-reset observation on done steps.  The stock PPO handles that
+        # by reading env_state.observation, but a grouped heterogeneous state
+        # has no flat observation view — so the routing happens HERE, where the
+        # padded layout is known, and the trainer's boundary hook becomes a
+        # no-op.  (Value bootstrap on time-limit dones then uses the reset
+        # observation; identical trade-off to the stock latent path.)
+        self.route_reset_observation_on_done = bool(route_reset_observation_on_done)
 
         wrapped = []
         for env in envs:
@@ -197,9 +250,50 @@ class ParallelMorphVecEnv:
         )
         self.append_joint_features = joint_block_specs is not None
         self.num_joint_slots = self.max_action_dim if self.append_joint_features else 0
-        self.output_observation_dim = self.joint_feature_start + (
-            self.num_joint_slots * JOINT_FEATURE_DIM
+        # Groups whose env can describe its SAMPLED model in-graph emit
+        # per-env dynamic descriptions (wider than the static block when the
+        # family morphology coordinates are appended).  All-or-nothing across
+        # groups, so one static slice layout serves the whole batch.
+        dynamic_flags = [
+            hasattr(env, "dynamic_joint_descriptions") for env in self._raw_envs
+        ]
+        self.dynamic_descriptions = any(dynamic_flags)
+        if self.dynamic_descriptions and not all(dynamic_flags):
+            missing = [
+                name
+                for name, flagged in zip(names, dynamic_flags, strict=True)
+                if not flagged
+            ]
+            raise ValueError(
+                f"Groups {missing} lack dynamic_joint_descriptions; dynamic "
+                "and static description groups cannot be mixed."
+            )
+        if self.dynamic_descriptions:
+            widths = {
+                int(env.dynamic_joint_description_dim) for env in self._raw_envs
+            }
+            if len(widths) != 1:
+                raise ValueError(
+                    f"Dynamic description widths differ across groups: {widths}."
+                )
+            self.joint_description_dim = widths.pop()
+        else:
+            self.joint_description_dim = GENERIC_JOINT_DESCRIPTION_DIM
+        # A 4th per-joint state channel (this joint's reference target) is
+        # emitted when EVERY spec carries target_obs_indices — the urma2-style
+        # per-joint conditioning. Mixed specs are rejected in _build_joint_blocks.
+        self._joint_targets_enabled = bool(joint_block_specs) and all(
+            getattr(s, "target_obs_indices", None) is not None
+            for s in joint_block_specs
         )
+        self.joint_state_dim = JOINT_STATE_DIM + (
+            1 if self._joint_targets_enabled else 0
+        )
+        self.joint_feature_dim = self.joint_description_dim + self.joint_state_dim + 1
+        self.critic_goal_start = self.joint_feature_start + (
+            self.num_joint_slots * self.joint_feature_dim
+        )
+        self.output_observation_dim = self.critic_goal_start + self.critic_goal_dim
         self._build_joint_blocks(joint_block_specs)
 
         # PPO/network construction queries these attributes before wrapping.
@@ -295,21 +389,42 @@ class ParallelMorphVecEnv:
                     f"{self.num_joint_slots} are padded."
                 )
         self.joint_block_specs = specs
-        self._joint_descriptions = tuple(
-            jnp.asarray(
-                np.pad(
-                    spec.descriptions,
-                    ((0, self.num_joint_slots - spec.num_joints), (0, 0)),
-                ),
-                dtype=jnp.float32,
+        if self.dynamic_descriptions:
+            # Descriptions are recomputed per env from the sampled model; the
+            # static arrays would carry the wrong width and are never read.
+            self._joint_descriptions = None
+        else:
+            self._joint_descriptions = tuple(
+                jnp.asarray(
+                    np.pad(
+                        spec.descriptions,
+                        ((0, self.num_joint_slots - spec.num_joints), (0, 0)),
+                    ),
+                    dtype=jnp.float32,
+                )
+                for spec in specs
             )
-            for spec in specs
-        )
         self._joint_position_indices = tuple(
             jnp.asarray(spec.position_obs_indices, dtype=jnp.int32) for spec in specs
         )
         self._joint_velocity_indices = tuple(
             jnp.asarray(spec.velocity_obs_indices, dtype=jnp.int32) for spec in specs
+        )
+        with_targets = [
+            getattr(s, "target_obs_indices", None) is not None for s in specs
+        ]
+        if any(with_targets) and not all(with_targets):
+            raise ValueError(
+                "target_obs_indices must be present on every spec or none; "
+                "mixed per-joint state widths cannot share one URMA layout."
+            )
+        self._joint_target_indices = (
+            tuple(
+                jnp.asarray(spec.target_obs_indices, dtype=jnp.int32)
+                for spec in specs
+            )
+            if all(with_targets) and specs
+            else None
         )
         one_hot_range = tuple(
             range(self.group_one_hot_start, self.group_one_hot_start + self.one_hot_dim)
@@ -323,43 +438,119 @@ class ParallelMorphVecEnv:
             morphology_dim=self.one_hot_dim,
             joint_feature_start=self.joint_feature_start,
             num_joints=self.num_joint_slots,
-            joint_description_dim=GENERIC_JOINT_DESCRIPTION_DIM,
-            joint_state_dim=JOINT_STATE_DIM,
-            joint_feature_dim=JOINT_FEATURE_DIM,
+            joint_description_dim=self.joint_description_dim,
+            joint_state_dim=self.joint_state_dim,
+            joint_feature_dim=self.joint_feature_dim,
             joint_position_indices=(),
             joint_velocity_indices=(),
             general_indices=tuple(range(self.max_observation_dim)) + one_hot_range,
+            critic_extra_indices=tuple(
+                range(
+                    self.critic_goal_start,
+                    self.critic_goal_start + self.critic_goal_dim,
+                )
+            ),
         )
 
-    def _joint_block(self, observation, group_index: int, last_action):
-        """``(n, num_joint_slots * JOINT_FEATURE_DIM)`` from a raw group observation."""
+    @property
+    def th(self):
+        """Canonical trajectory handler shared by every morphology group.
+
+        A grouped multi-topology environment has one trajectory handler per
+        family, so a single actor-latent table is only valid if every family
+        was built from the same canonical (motion, timestamp) grid.  This
+        property asserts that alignment instead of silently assuming it.
+        """
+        handlers = [getattr(env, "th", None) for env in self._raw_envs]
+        if any(handler is None for handler in handlers):
+            missing = [
+                name
+                for name, handler in zip(self.names, handlers, strict=True)
+                if handler is None
+            ]
+            raise AttributeError(
+                f"Groups {missing} carry no trajectory data; a shared "
+                "actor-latent table cannot be keyed canonically."
+            )
+        reference_splits = np.asarray(handlers[0].traj.data.split_points)
+        reference_frequency = float(handlers[0].traj.info.frequency)
+        for name, handler in zip(self.names[1:], handlers[1:], strict=True):
+            splits = np.asarray(handler.traj.data.split_points)
+            if not np.array_equal(splits, reference_splits):
+                raise ValueError(
+                    f"Group {name!r} trajectory split_points {splits.tolist()} "
+                    f"differ from {self.names[0]!r} "
+                    f"{reference_splits.tolist()}; the families are not "
+                    "canonically aligned."
+                )
+            frequency = float(handler.traj.info.frequency)
+            if frequency != reference_frequency:
+                raise ValueError(
+                    f"Group {name!r} trajectory frequency {frequency} differs "
+                    f"from {self.names[0]!r} {reference_frequency}; canonical "
+                    "timestamps would diverge."
+                )
+        return handlers[0]
+
+    def _joint_block(self, observation, group_index: int, last_action, group_state=None):
+        """``(n, num_joint_slots * joint_feature_dim)`` from a raw group observation."""
         n = observation.shape[0]
         slots = self.num_joint_slots
         num_joints = self.group_action_dims[group_index]
         dtype = observation.dtype
 
-        descriptions = jnp.broadcast_to(
-            self._joint_descriptions[group_index].astype(dtype)[None, :, :],
-            (n, slots, GENERIC_JOINT_DESCRIPTION_DIM),
-        )
+        if self.dynamic_descriptions:
+            if group_state is None:
+                raise ValueError(
+                    "Dynamic joint descriptions need the group state."
+                )
+            morphologies = group_state.additional_carry.morphology
+            descriptions = jax.vmap(
+                self._raw_envs[group_index].dynamic_joint_descriptions
+            )(morphologies).astype(dtype)
+            pad_slots = slots - num_joints
+            if pad_slots:
+                descriptions = jnp.pad(
+                    descriptions, ((0, 0), (0, pad_slots), (0, 0))
+                )
+        else:
+            descriptions = jnp.broadcast_to(
+                self._joint_descriptions[group_index].astype(dtype)[None, :, :],
+                (n, slots, self.joint_description_dim),
+            )
         position = observation[:, self._joint_position_indices[group_index]]
         velocity = observation[:, self._joint_velocity_indices[group_index]]
         if last_action is None:
             last_action = jnp.zeros((n, num_joints), dtype=dtype)
-        state = jnp.stack(
-            [position, velocity, last_action.astype(dtype)], axis=-1
-        )  # (n, num_joints, 3)
+        channels = [position, velocity, last_action.astype(dtype)]
+        if self._joint_target_indices is not None:
+            channels.append(
+                observation[:, self._joint_target_indices[group_index]]
+            )
+        state = jnp.stack(channels, axis=-1)  # (n, num_joints, joint_state_dim)
         pad = slots - num_joints
         if pad:
             state = jnp.pad(state, ((0, 0), (0, pad), (0, 0)))
         valid = (jnp.arange(slots) < num_joints).astype(dtype)
         valid = jnp.broadcast_to(valid[None, :, None], (n, slots, 1))
         block = jnp.concatenate([descriptions, state, valid], axis=-1)
-        return block.reshape((n, slots * JOINT_FEATURE_DIM))
+        return block.reshape((n, slots * self.joint_feature_dim))
 
-    def _output_observation(self, observation, group_index: int, last_action=None):
+    def _output_observation(
+        self, observation, group_index: int, last_action=None, group_state=None
+    ):
+        critic_goal = None
+        if self.append_goal_for_critic:
+            # captured BEFORE blanking — this is the privileged critic copy
+            values = observation[:, self._blank_goal_indices[group_index]]
+            pad = self.critic_goal_dim - values.shape[1]
+            critic_goal = jnp.pad(values, ((0, 0), (0, pad))) if pad else values
+        if self._blank_goal_indices is not None:
+            observation = observation.at[
+                :, self._blank_goal_indices[group_index]
+            ].set(0.0)
         joint_block = (
-            self._joint_block(observation, group_index, last_action)
+            self._joint_block(observation, group_index, last_action, group_state)
             if self.append_joint_features
             else None
         )
@@ -383,6 +574,8 @@ class ParallelMorphVecEnv:
             observation = jnp.concatenate([observation, mask], axis=-1)
         if joint_block is not None:
             observation = jnp.concatenate([observation, joint_block], axis=-1)
+        if critic_goal is not None:
+            observation = jnp.concatenate([observation, critic_goal], axis=-1)
         return observation
 
     def reset(self, rng_keys):
@@ -395,7 +588,10 @@ class ParallelMorphVecEnv:
             for fn, group in zip(self._reset_fns, self.groups, strict=True)
         ]
         observations = jnp.concatenate(
-            [self._output_observation(out[0], i) for i, out in enumerate(outputs)],
+            [
+                self._output_observation(out[0], i, group_state=out[1])
+                for i, out in enumerate(outputs)
+            ],
             axis=0,
         )
         states = ParallelMorphState(tuple(out[1] for out in outputs))
@@ -422,9 +618,28 @@ class ParallelMorphVecEnv:
             group_actions.append(group_action)
             outputs.append(fn(group_state, group_action))
 
+        def _group_observation(out):
+            if not self.route_reset_observation_on_done:
+                return out[0]
+            # out[5] is the post-step state: on done it already holds the
+            # auto-reset simulator observation, which is what a trajectory-
+            # keyed actor latent must be paired with.
+            return jnp.where(out[3][:, None], out[5].observation, out[0])
+
+        def _group_last_action(out, action):
+            if not self.route_reset_observation_on_done:
+                return action
+            # reset convention: the previous action of a fresh episode is zero
+            return jnp.where(out[3][:, None], jnp.zeros_like(action), action)
+
         observations = jnp.concatenate(
             [
-                self._output_observation(out[0], i, group_actions[i])
+                self._output_observation(
+                    _group_observation(out),
+                    i,
+                    _group_last_action(out, group_actions[i]),
+                    group_state=out[5],
+                )
                 for i, out in enumerate(outputs)
             ],
             axis=0,

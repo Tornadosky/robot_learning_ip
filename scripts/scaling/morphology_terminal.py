@@ -62,4 +62,45 @@ class MorphologyAwareRootPoseTrajTerminalStateHandler(RootPoseTrajTerminalStateH
         )
 
 
+class GravityRootPoseTrajTerminalStateHandler(
+    MorphologyAwareRootPoseTrajTerminalStateHandler
+):
+    """Rotation terminal measured from GRAVITY, not the clip's quat centroid.
+
+    The base class allows a fixed angular distance from the centroid of the
+    clip's root quaternions -- on dance2_subject4 that centroid is ~90 deg from
+    upright, so heading and balance share one ~47 deg budget: a robot can be
+    nearly lying down and pass, or upright and fail for turning. This subclass
+    keeps the height and root-position checks and replaces the rotation check
+    with the tilt of the root frame's z-axis from world-up, which is what
+    "fallen" actually means. Heading (yaw) is unconstrained by construction.
+    """
+
+    def __init__(self, env, max_tilt_degrees: float = 60.0, **kwargs):
+        super().__init__(env, **kwargs)
+        import numpy as _np
+
+        self._cos_max_tilt = float(_np.cos(_np.radians(max_tilt_degrees)))
+
+    def _is_absorbing_compat(self, env, obs, info, data, carry, backend):
+        saved = self._valid_threshold
+        # Disable the centroid rotation check inside the base implementation.
+        # Python-level mutation is safe: this executes at trace time only.
+        self._valid_threshold = 1e9
+        try:
+            base_absorbing, carry = super()._is_absorbing_compat(
+                env, obs, info, data, carry, backend
+            )
+        finally:
+            self._valid_threshold = saved
+        quat = data.qpos[self.root_quat_ind]  # w-first (MuJoCo)
+        quat = quat / backend.linalg.norm(quat)
+        x, y = quat[1], quat[2]
+        # world-z component of the body z-axis: R[2,2] = 1 - 2(x^2 + y^2)
+        cos_tilt = 1.0 - 2.0 * (x * x + y * y)
+        tilt_cond = backend.less(cos_tilt, self._cos_max_tilt)
+        return backend.logical_or(base_absorbing, tilt_cond), carry
+
+
 MorphologyAwareRootPoseTrajTerminalStateHandler.register()
+GravityRootPoseTrajTerminalStateHandler.register()

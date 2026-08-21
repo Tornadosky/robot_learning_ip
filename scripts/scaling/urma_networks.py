@@ -134,16 +134,31 @@ class URMAPolicyHead(nn.Module):
     activation: str
     init_std: float
     learnable_std: bool
+    motion_latent_dim: int = 0
+    motion_latent_embed_dim: int = 64
 
     @nn.compact
-    def __call__(self, descriptions, joint_states, general, valid_mask):
+    def __call__(
+        self, descriptions, joint_states, general, valid_mask, motion_latent=None
+    ):
         encoded, attention, auxiliary = URMAJointEncoder(
             variant=self.variant,
             latent_slots=self.latent_slots,
             joint_value_dim=self.joint_value_dim,
             name="joint_encoder",
         )(descriptions, joint_states, valid_mask)
-        x = jnp.concatenate([encoded, general], axis=-1)
+        core_inputs = [encoded, general]
+        if self.motion_latent_dim > 0:
+            # The motion command enters the actor core ONLY here.  The small
+            # FSQ-width latent is projected up to the embed width so the code
+            # dimensionality stays decoupled from the actor's internal width.
+            embedded = _dense(
+                motion_latent,
+                self.motion_latent_embed_dim,
+                weight_norm=self.variant == "urmav2",
+            )
+            core_inputs.append(nn.elu(embedded))
+        x = jnp.concatenate(core_inputs, axis=-1)
         activation = _activation(self.activation)
 
         if self.variant == "urma":
@@ -246,9 +261,18 @@ class URMAActorCritic(nn.Module):
     latent_slots: int = 64
     joint_value_dim: int = 4
     core_hidden: tuple[int, ...] = (512, 256, 128)
+    #: Width of the separate motion-command latent (FSQ code width, NOT the
+    #: 64-D actor conditioning width).  0 keeps the module byte-compatible
+    #: with pre-latent checkpoints.
+    actor_latent_dim: int = 0
+    motion_latent_embed_dim: int = 64
+    #: Observation dims appended for the CRITIC only (privileged reference
+    #: while the actor's goal copy is blanked).  Empty = both heads see the
+    #: same general block, as before.
+    critic_extra_indices: tuple[int, ...] = ()
 
     @nn.compact
-    def __call__(self, observation):
+    def __call__(self, observation, actor_latent=None):
         if self.action_dim != self.num_joints:
             raise ValueError(
                 "URMA requires one padded action slot per encoded joint; "
@@ -276,6 +300,28 @@ class URMAActorCritic(nn.Module):
         valid_mask = raw_features[..., state_stop]
         general = x[..., jnp.asarray(self.general_indices)]
 
+        if self.actor_latent_dim > 0:
+            if actor_latent is None:
+                raise ValueError(
+                    "actor_latent is required when actor_latent_dim is non-zero."
+                )
+            actor_latent = jnp.asarray(actor_latent, dtype=general.dtype)
+            if actor_latent.shape[-1] != self.actor_latent_dim:
+                raise ValueError(
+                    f"Expected actor_latent width {self.actor_latent_dim}, got "
+                    f"{actor_latent.shape[-1]}."
+                )
+            # RunningMeanStd squeezes a singleton batch; align the latent with
+            # the post-normalisation leading shape so n_envs=1 stays supported.
+            actor_latent = jnp.reshape(
+                actor_latent, general.shape[:-1] + (self.actor_latent_dim,)
+            )
+        elif actor_latent is not None:
+            raise ValueError(
+                "actor_latent supplied but actor_latent_dim is 0; refusing to "
+                "silently drop the motion command."
+            )
+
         mean, log_std = URMAPolicyHead(
             variant=self.variant,
             core_hidden=self.core_hidden,
@@ -284,8 +330,16 @@ class URMAActorCritic(nn.Module):
             activation=self.activation,
             init_std=self.init_std,
             learnable_std=self.learnable_std,
+            motion_latent_dim=self.actor_latent_dim,
+            motion_latent_embed_dim=self.motion_latent_embed_dim,
             name="actor",
-        )(descriptions, joint_states, general, valid_mask)
+        )(descriptions, joint_states, general, valid_mask, actor_latent)
+        critic_general = general
+        if self.critic_extra_indices:
+            critic_general = jnp.concatenate(
+                [general, x[..., jnp.asarray(self.critic_extra_indices)]],
+                axis=-1,
+            )
         value = URMAValueHead(
             variant=self.variant,
             core_hidden=self.core_hidden,
@@ -293,7 +347,7 @@ class URMAActorCritic(nn.Module):
             joint_value_dim=self.joint_value_dim,
             activation=self.activation,
             name="critic",
-        )(descriptions, joint_states, general, valid_mask)
+        )(descriptions, joint_states, critic_general, valid_mask)
         pi = distrax.MultivariateNormalDiag(mean, jnp.exp(log_std))
         return pi, value
 
@@ -315,6 +369,9 @@ def _network_to_dict(network: URMAActorCritic) -> dict[str, Any]:
         "latent_slots": int(network.latent_slots),
         "joint_value_dim": int(network.joint_value_dim),
         "core_hidden": tuple(int(i) for i in network.core_hidden),
+        "actor_latent_dim": int(network.actor_latent_dim),
+        "motion_latent_embed_dim": int(network.motion_latent_embed_dim),
+        "critic_extra_indices": tuple(int(i) for i in network.critic_extra_indices),
     }
 
 
@@ -323,6 +380,9 @@ class URMAAgentConf(AgentConfBase):
     config: DictConfig
     network: URMAActorCritic
     tx: Any
+    #: Motion-command table (one row per canonical trajectory timestamp).
+    #: None keeps the pre-latent behaviour and checkpoint format.
+    actor_latent_buffer: Any = None
 
     def serialize(self):
         return {
@@ -330,16 +390,29 @@ class URMAAgentConf(AgentConfBase):
                 self.config, resolve=True, throw_on_missing=True
             ),
             "network": _network_to_dict(self.network),
+            "actor_latent_buffer": (
+                None
+                if self.actor_latent_buffer is None
+                else self.actor_latent_buffer.to_dict()
+            ),
         }
 
     @classmethod
     def from_dict(cls, data):
+        from loco_mujoco.algorithms import TrajectoryLatentBuffer
+
         config = OmegaConf.create(data["config"])
         network = URMAActorCritic(**data["network"])
+        serialized_latents = data.get("actor_latent_buffer")
         return cls(
             config=config,
             network=network,
             tx=URMAPPO._get_optimizer(config),
+            actor_latent_buffer=(
+                None
+                if serialized_latents is None
+                else TrajectoryLatentBuffer.from_dict(serialized_latents)
+            ),
         )
 
 
@@ -350,13 +423,13 @@ class URMAPPO(PPOJax):
     _agent_state = PPOAgentState
 
     @classmethod
-    def init_agent_conf(cls, env, config):
+    def init_agent_conf(cls, env, config, actor_latent_buffer=None):
         layout: URMAInputLayout | None = getattr(env, "urma_input_layout", None)
         if layout is None:
             raise TypeError(
                 "URMAPPO requires append_urma_joint_features=True in the environment."
             )
-        base_conf = PPOJax.init_agent_conf(env, config)
+        base_conf = PPOJax.init_agent_conf(env, config, actor_latent_buffer)
         experiment = base_conf.config.experiment
         variant = str(getattr(experiment, "backbone", "urma")).lower()
         if variant not in URMA_VARIANTS:
@@ -390,5 +463,17 @@ class URMAPPO(PPOJax):
             latent_slots=int(getattr(experiment, "urma_latent_slots", 64)),
             joint_value_dim=int(getattr(experiment, "urma_joint_value_dim", 4)),
             core_hidden=core_hidden,
+            actor_latent_dim=int(base_conf.network.actor_latent_dim),
+            motion_latent_embed_dim=int(
+                getattr(experiment, "motion_latent_embed_dim", 64)
+            ),
+            critic_extra_indices=tuple(
+                getattr(layout, "critic_extra_indices", ()) or ()
+            ),
         )
-        return cls._agent_conf(base_conf.config, network, base_conf.tx)
+        return cls._agent_conf(
+            base_conf.config,
+            network,
+            base_conf.tx,
+            actor_latent_buffer=base_conf.actor_latent_buffer,
+        )

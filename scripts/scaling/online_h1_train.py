@@ -41,9 +41,33 @@ from scaling.embodiment_catalog import (  # noqa: E402
 )
 from scaling.online_h1 import (  # noqa: E402
     MORPHOLOGY_NAMES,
+    MORPHOLOGY_SPEC,
     MorphologyBounds,
     register_online_h1_env,
 )
+
+
+def resolve_morph_bounds(low, high) -> tuple[list[float], list[float]]:
+    """Pad short bounds so pre-expansion invocations keep their meaning.
+
+    The descriptor grew from 4 to len(MORPHOLOGY_NAMES) dims. A caller passing
+    only the first k dims gets those k as given and every later dim PINNED at
+    its nominal value (1.0 for scales, 0.0 for offsets, ±epsilon so bounds stay
+    strictly ordered). Passing nothing yields the full default (wide) bounds.
+    """
+    if low is None and high is None:
+        return list(MorphologyBounds().low), list(MorphologyBounds().high)
+    low = list(MorphologyBounds().low if low is None else low)
+    high = list(MorphologyBounds().high if high is None else high)
+    for i in range(len(low), len(MORPHOLOGY_NAMES)):
+        name = MORPHOLOGY_NAMES[i]
+        nominal, eps = (1.0, 1e-3) if name.endswith("_scale") else (0.0, 1e-4)
+        low.append(nominal - eps)
+    for i in range(len(high), len(MORPHOLOGY_NAMES)):
+        name = MORPHOLOGY_NAMES[i]
+        nominal, eps = (1.0, 1e-3) if name.endswith("_scale") else (0.0, 1e-4)
+        high.append(nominal + eps)
+    return low, high
 from scaling.urma_networks import (  # noqa: E402
     URMA_IMPLEMENTATION_REVISION,
     URMAPPO,
@@ -62,6 +86,128 @@ ONLINE_REWARD_PARAMS = {
 }
 
 
+#: Weights from scripts/train_deepmimic_dance.py, i.e. the stock DeepMimic arm
+#: with the spatial terms live. Selectable via --reward-weights dance.
+DANCE_REWARD_PARAMS = {
+    "qpos_w_sum": 0.4,
+    "qvel_w_sum": 0.2,
+    "rpos_w_sum": 0.5,
+    "rquat_w_sum": 0.3,
+    "rvel_w_sum": 0.1,
+}
+
+#: Same weights as `dance`, but the qpos/qvel terms are restricted to the root
+#: free joint. MimicReward's rpos/rquat/rvel terms are all relative to
+#: `upper_body_mimic` and therefore translation-invariant, so world-frame root
+#: position enters ONLY through qpos -- where it is 3 of 22 entries inside one
+#: mean-square, i.e. almost free to abandon. Measured consequence: policies drift
+#: 0.67-2.75 m against a motion whose total travel is 0.66 m. Restricting
+#: joints_for_mimic to the root turns that diluted term into an undiluted
+#: world-frame root term, using configuration only.
+DANCE_ROOT_REWARD_PARAMS = {
+    **DANCE_REWARD_PARAMS,
+    "joints_for_mimic": ["root"],
+}
+
+#: `dance_root` with the root term made dominant rather than merely undiluted.
+#: `dance_root` alone cut mean drift only 0.84 -> 0.76 m against a motion that
+#: travels 0.66 m, which leaves open whether the residue is a weighting problem
+#: (the root term is still outvoted 1.0 to 0.4 by the translation-invariant
+#: terms) or a structural one. This arm settles that: if drift barely moves at
+#: 2.5x the root weight, reweighting is not the answer and a world-anchored
+#: spatial term is required.
+DANCE_ROOT_HEAVY_REWARD_PARAMS = {
+    **DANCE_ROOT_REWARD_PARAMS,
+    "qpos_w_sum": 1.0,
+}
+
+#: Root tracking as the ONLY objective. This is not a candidate configuration --
+#: it is a diagnostic. `dance_root` cut drift 0.84 -> 0.76 m and `dance_root_heavy`
+#: (2.5x the root weight) made it slightly WORSE, 0.79 m, which rules out
+#: reweighting as the lever but leaves two very different explanations open:
+#: the reward's structure cannot drive world-frame tracking, or the reference is
+#: not trackable in position at this budget at all. Removing every competing term
+#: separates them. If drift stays near 0.8 m with nothing else to optimise, the
+#: limit is control/feasibility, not reward specification.
+ROOT_ONLY_REWARD_PARAMS = {
+    "qpos_w_sum": 1.0,
+    "qvel_w_sum": 0.0,
+    "rpos_w_sum": 0.0,
+    "rquat_w_sum": 0.0,
+    "rvel_w_sum": 0.0,
+    "joints_for_mimic": ["root"],
+}
+
+#: `dance_root` with the root term's exponential WIDENED (qpos_w_exp 10 -> 1).
+#: exp(-10 * mean-square) is saturated once the root is ~0.5 m away -- the
+#: gradient vanishes exactly where the drifting policy lives (gold stock arm:
+#: 3.8 m mean, 11 m final). At w_exp=1 the term still discriminates at 2-3 m.
+#: Configuration only: qpos_w_exp is an upstream MimicReward kwarg.
+DANCE_ROOT_WIDE_REWARD_PARAMS = {
+    **DANCE_ROOT_REWARD_PARAMS,
+    "qpos_w_exp": 1.0,
+}
+
+REWARD_PRESETS = {
+    "online": ONLINE_REWARD_PARAMS,
+    "dance": DANCE_REWARD_PARAMS,
+    "dance_root": DANCE_ROOT_REWARD_PARAMS,
+    "dance_root_heavy": DANCE_ROOT_HEAVY_REWARD_PARAMS,
+    "dance_root_wide": DANCE_ROOT_WIDE_REWARD_PARAMS,
+    "root_only": ROOT_ONLY_REWARD_PARAMS,
+}
+
+
+def _resolve_reward_params(args) -> dict:
+    """Reward weights for the run; defaults to the existing online preset.
+
+    The online preset zeroes the site terms because per-body site targets used
+    to require an unaffordable retargeting step. That is no longer true (batched
+    GN IK retargets 1000 bodies in ~18 s on this GPU), so the spatial terms are
+    now selectable. Default is unchanged so existing runs reproduce exactly.
+    """
+    preset = str(getattr(args, "reward_weights", "online")).lower()
+    if preset not in REWARD_PRESETS:
+        raise ValueError(f"unknown --reward-weights {preset!r}; choose from {sorted(REWARD_PRESETS)}")
+    return dict(REWARD_PRESETS[preset])
+
+
+def _resolve_reward_type(args) -> dict:
+    """Reward class for the run; defaults to upstream MimicReward.
+
+    `MorphMimicReward` recomputes the reference SITE targets by forward
+    kinematics on the body actually being simulated. Without it the multi-body
+    trainer scores every randomized body against the nominal body's hand and
+    foot positions -- up to 21 cm wrong for the bodies it samples.
+    """
+    name = str(getattr(args, "reward_type", "MimicReward"))
+    if name == "MorphMimicReward":
+        h1md = str(WORKSPACE / "scripts" / "h1md")
+        if h1md not in sys.path:
+            sys.path.insert(0, h1md)
+        import morph_mimic_reward  # noqa: F401  (registers the class)
+    return {"reward_type": name}
+
+
+def _resolve_goal(args) -> dict:
+    """Goal observation for the run; defaults to the stock GoalTrajMimic.
+
+    `GoalTrajMimicRootErr` appends the local-frame root position error. It exists
+    because MimicReward scores world-frame root position while both the robot's
+    own observation (FreeJointPosNoXY) and GoalTrajMimic's reference qpos strip
+    root XY -- so without it the policy is charged for a displacement it cannot
+    perceive, and no configuration tracks the root better than standing still.
+    """
+    goal = str(getattr(args, "goal_type", "GoalTrajMimic"))
+    if goal == "GoalTrajMimicRootErr":
+        h1md = str(WORKSPACE / "scripts" / "h1md")
+        if h1md not in sys.path:
+            sys.path.insert(0, h1md)
+        from goal_rooterr import register as _register_root_err
+        _register_root_err()
+    return {"goal_type": goal}
+
+
 def _largest_divisor_at_most(value: int, limit: int) -> int:
     for candidate in range(min(value, limit), 0, -1):
         if value % candidate == 0:
@@ -77,6 +223,17 @@ def build_config(args, actual_timesteps: int):
         {
             "experiment": {
                 "hidden_layers": list(args.hidden),
+                # SONIC plumbing probe: this is a separate actor argument, not
+                # part of the LocoMuJoCo observation or any observation group.
+                "actor_latent_dim": int(getattr(args, "fake_latent_dim", 0)),
+                "fake_latent_seed": int(
+                    args.seed
+                    if getattr(args, "fake_latent_seed", None) is None
+                    else args.fake_latent_seed
+                ),
+                "fake_latent_scale": float(
+                    getattr(args, "fake_latent_scale", 1.0)
+                ),
                 "backbone": str(getattr(args, "backbone", "mlp")),
                 "urma_activation": str(getattr(args, "urma_activation", "elu")),
                 "urma_latent_slots": int(getattr(args, "urma_latent_slots", 64)),
@@ -141,16 +298,35 @@ def build_online_env(args):
         # catalog's own bounds must be the training bounds.
         args.morph_low = list(catalog.bounds_low)
         args.morph_high = list(catalog.bounds_high)
+    args.morph_low, args.morph_high = resolve_morph_bounds(
+        getattr(args, "morph_low", None), getattr(args, "morph_high", None)
+    )
     bounds = MorphologyBounds(tuple(args.morph_low), tuple(args.morph_high))
     bounds.validate()
     robot = get_robot("h1")
-    source_env = ImitationFactory.make(
-        robot.cpu_env_name,
-        lafan1_dataset_conf=LAFAN1DatasetConf([args.clip]),
-    )
-    full_traj = source_env.th.traj
-    start_frame, n_frames = resolve_window(full_traj, args.duration, args.start_frame)
-    base_traj = crop_trajectory(full_traj, start_frame, n_frames)
+    reference_npz = getattr(args, "reference_npz", None)
+    if reference_npz:
+        # A screened/conditioned reference in loco-mujoco's own Trajectory npz
+        # schema (e.g. pipeline_blocks gold refs). It ships complete FK arrays,
+        # so ImitationFactory will not re-extend it, and the TrajectoryHandler
+        # interpolates it to the env's control frequency.
+        from loco_mujoco.trajectory import Trajectory
+
+        base_traj = Trajectory.load(str(reference_npz))
+        if not bool(base_traj.data.is_complete):
+            raise ValueError(
+                f"--reference-npz {reference_npz} is not a complete trajectory; "
+                "condition/extend it first so reward site terms have data."
+            )
+        start_frame, n_frames = 0, int(base_traj.data.n_samples)
+    else:
+        source_env = ImitationFactory.make(
+            robot.cpu_env_name,
+            lafan1_dataset_conf=LAFAN1DatasetConf([args.clip]),
+        )
+        full_traj = source_env.th.traj
+        start_frame, n_frames = resolve_window(full_traj, args.duration, args.start_frame)
+        base_traj = crop_trajectory(full_traj, start_frame, n_frames)
 
     xml_path = WORKSPACE / "generated_variants" / "h1_morphology_nominal" / "h1.xml"
     if not xml_path.is_file():
@@ -176,15 +352,32 @@ def build_online_env(args):
         catalog_descriptors=(None if catalog is None else catalog.descriptors),
         catalog_mode=str(getattr(args, "catalog_mode", "continuous")),
         catalog_stride=int(getattr(args, "catalog_stride", 1)),
-        reward_params=ONLINE_REWARD_PARAMS,
+        reward_params=_resolve_reward_params(args),
+        **_resolve_reward_type(args),
+        **_resolve_goal(args),
         **(
             {"terminal_state_type": args.terminal_handler}
             if getattr(args, "terminal_handler", None)
             else {}
         ),
+        **(
+            {"th_params": dict(args.th_params)}
+            if getattr(args, "th_params", None)
+            else {}
+        ),
+        **(
+            # RootPoseTrajTerminalStateHandler already implements a root-position
+            # deviation check; upstream just defaults max_root_pos_deviation to
+            # 1e6, i.e. never terminate. Setting it is the whole "early
+            # termination on deviation" mechanism -- no new code.
+            {"terminal_state_params": {"max_root_pos_deviation": float(args.max_root_deviation)}}
+            if getattr(args, "max_root_deviation", None)
+            else {}
+        ),
     )
     metadata = {
         "clip": args.clip,
+        "reference_npz": (None if not reference_npz else str(reference_npz)),
         "window_start_frame": int(start_frame),
         "window_frames": int(n_frames),
         "frequency_hz": float(base_traj.info.frequency),
@@ -193,6 +386,11 @@ def build_online_env(args):
         "morphology_low": list(bounds.low),
         "morphology_high": list(bounds.high),
         "catalog_mode": str(getattr(args, "catalog_mode", "continuous")),
+        "reward_weights_preset": str(getattr(args, "reward_weights", "online")),
+        "goal_type": str(getattr(args, "goal_type", "GoalTrajMimic")),
+        "reward_type": str(getattr(args, "reward_type", "MimicReward")),
+        "max_root_pos_deviation": getattr(args, "max_root_deviation", None),
+        "reward_params": _resolve_reward_params(args),
         "init_checkpoint": (
             None
             if getattr(args, "init_checkpoint", None) is None
@@ -481,7 +679,22 @@ def main():
     algorithm = (
         base_algorithm if catalog is None else with_catalog_vec_env(base_algorithm)
     )
+    observation_shape_before_latents = tuple(env.info.observation_space.shape)
     agent_conf = algorithm.init_agent_conf(env, config)
+    if tuple(env.info.observation_space.shape) != observation_shape_before_latents:
+        raise RuntimeError(
+            "Actor latent setup changed the LocoMuJoCo observation space. "
+            "Latents must remain a separate policy input."
+        )
+    actor_latent_buffer = getattr(agent_conf, "actor_latent_buffer", None)
+    if actor_latent_buffer is not None:
+        print(
+            "[online] separate actor latent buffer="
+            f"{tuple(actor_latent_buffer.values.shape)} "
+            f"trajectories={actor_latent_buffer.num_trajectories} "
+            f"obs_unchanged={observation_shape_before_latents}",
+            flush=True,
+        )
     key = jax.random.PRNGKey(args.seed)
     init_state = None
     if getattr(args, "init_checkpoint", None) is not None:
@@ -584,6 +797,23 @@ def main():
         "lr": args.lr,
         "init_std": args.init_std,
         "learnable_std": bool(args.learnable_std),
+        "actor_latent": (
+            None
+            if actor_latent_buffer is None
+            else {
+                "kind": "deterministic_fake_per_trajectory_timestamp",
+                "interface": "separate_actor_argument",
+                "shape": list(actor_latent_buffer.values.shape),
+                "split_points": np.asarray(
+                    actor_latent_buffer.split_points
+                ).astype(int).tolist(),
+                "seed": int(config.experiment.fake_latent_seed),
+                "scale": float(config.experiment.fake_latent_scale),
+                "observation_shape_unchanged": list(
+                    observation_shape_before_latents
+                ),
+            }
+        ),
         "compile_seconds": compile_seconds,
         "training_seconds": training_seconds,
         "steps_per_second": throughput,
@@ -616,6 +846,10 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--clip", default="walk1_subject1")
+    parser.add_argument(
+        "--reference-npz", type=Path, default=None,
+        help="Complete Trajectory npz (gold/conditioned reference); overrides --clip/--start-frame/--duration.",
+    )
     parser.add_argument("--duration", type=float, default=30.0)
     parser.add_argument("--start-frame", type=int, default=None)
     parser.add_argument("--num-envs", type=int, default=2048)
@@ -624,6 +858,28 @@ def parse_args():
     parser.add_argument("--num-minibatches", type=int, default=32)
     parser.add_argument("--update-epochs", type=int, default=4)
     parser.add_argument("--hidden", type=int, nargs="+", default=[512, 256])
+    parser.add_argument(
+        "--fake-latent-dim",
+        type=int,
+        default=0,
+        help=(
+            "Create one deterministic fake latent per trajectory timestamp and "
+            "pass it separately to the actor. Use 64 for a SONIC-shaped probe; "
+            "0 disables latent conditioning."
+        ),
+    )
+    parser.add_argument(
+        "--fake-latent-seed",
+        type=int,
+        default=None,
+        help="Fake latent-table seed; defaults to --seed.",
+    )
+    parser.add_argument(
+        "--fake-latent-scale",
+        type=float,
+        default=1.0,
+        help="Half-width of the uniform fake latent values.",
+    )
     parser.add_argument("--backbone", choices=["mlp", "urma", "urmav2"], default="mlp")
     parser.add_argument("--urma-activation", default="elu")
     parser.add_argument("--urma-latent-slots", type=int, default=64)
@@ -682,19 +938,70 @@ def parse_args():
         action="store_true",
         help="Label the manifest as a throughput/memory result, not a learning result.",
     )
+    parser.add_argument(
+        "--reward-weights",
+        choices=sorted(REWARD_PRESETS),
+        default="online",
+        help=(
+            "online (default, unchanged): qpos/qvel only, site terms zeroed. "
+            "dance: the stock DeepMimic weights with the site terms live, which "
+            "scores every randomized body against the shared reference's site targets."
+        ),
+    )
+    parser.add_argument(
+        "--goal-type",
+        choices=["GoalTrajMimic", "GoalTrajMimicRootErr"],
+        default="GoalTrajMimic",
+        help=(
+            "GoalTrajMimic (default, unchanged): translation-invariant. "
+            "GoalTrajMimicRootErr: adds the local-frame root position error (3 dims), "
+            "making the world-frame position the reward scores actually observable."
+        ),
+    )
+    parser.add_argument(
+        "--max-root-deviation",
+        type=float,
+        default=None,
+        help=(
+            "Terminate the episode when the root strays this far (m) from the reference. "
+            "Upstream defaults to 1e6 (never), which makes drifting free: the policy keeps "
+            "collecting a full episode's reward while wandering. Try 0.5."
+        ),
+    )
+    parser.add_argument(
+        "--reward-type",
+        choices=["MimicReward", "MorphMimicReward"],
+        default="MimicReward",
+        help=("MorphMimicReward retargets the site targets to the body being controlled, "
+              "by forward kinematics on that env's own morphology arrays."),
+    )
     parser.add_argument("--no-normalize-reward", action="store_true")
     parser.add_argument("--use-mjwarp", action="store_true")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
-        "--morph-low", type=float, nargs=4, default=list(MorphologyBounds().low)
+        "--morph-low", type=float, nargs="+", default=None,
+        help=(
+            f"Lower morphology bounds, up to {len(MORPHOLOGY_NAMES)} values "
+            f"({', '.join(MORPHOLOGY_NAMES)}). Missing trailing dims are "
+            "pinned at nominal; omit entirely for the full default ranges."
+        ),
     )
     parser.add_argument(
-        "--morph-high", type=float, nargs=4, default=list(MorphologyBounds().high)
+        "--morph-high", type=float, nargs="+", default=None,
     )
     parser.add_argument("--run-tag", default=datetime.now().strftime("%Y%m%d_%H%M%S"))
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=None)
     args = parser.parse_args()
+    if args.fake_latent_dim < 0:
+        parser.error("--fake-latent-dim cannot be negative.")
+    if not np.isfinite(args.fake_latent_scale) or args.fake_latent_scale <= 0.0:
+        parser.error("--fake-latent-scale must be finite and greater than zero.")
+    if args.fake_latent_dim and args.backbone != "mlp":
+        parser.error(
+            "The verified separate fake-latent path currently targets the MLP "
+            "ActorCritic; choose --backbone mlp."
+        )
     if args.output_dir is None:
         args.output_dir = WORKSPACE / "experiments" / "scaling_online" / args.run_tag
     return args

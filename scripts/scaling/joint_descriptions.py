@@ -61,6 +61,13 @@ class JointBlockSpec:
     position_obs_indices: tuple[int, ...]
     velocity_obs_indices: tuple[int, ...]
     joint_names: tuple[str, ...]
+    #: Observation indices of each actuated joint's REFERENCE target angle
+    #: inside the goal's reference_qpos block (actuator order), or None.
+    #: When present on every spec, the vec env emits a 4th per-joint state
+    #: channel so each joint's block carries its own target — the urma2-style
+    #: conditioning (O2 experiment). None keeps the historical 3-channel
+    #: layout and existing checkpoints loadable.
+    target_obs_indices: tuple[int, ...] | None = None
 
     def __post_init__(self) -> None:
         if self.descriptions.shape != (
@@ -83,6 +90,12 @@ class JointBlockSpec:
                     f"{self.name}: expected {self.num_joints} {label} observation "
                     f"indices, got {len(indices)}."
                 )
+        if (self.target_obs_indices is not None
+                and len(self.target_obs_indices) != self.num_joints):
+            raise ValueError(
+                f"{self.name}: expected {self.num_joints} target observation "
+                f"indices, got {len(self.target_obs_indices)}."
+            )
 
 
 def _finite_scaled(values, scale: float) -> np.ndarray:
@@ -204,12 +217,68 @@ def joint_observation_indices(env) -> tuple[tuple[int, ...], tuple[int, ...]]:
     return resolved["JointPos"], resolved["JointVel"]
 
 
-def build_joint_block_spec(env, name: str) -> JointBlockSpec:
+def reference_target_obs_indices(env) -> tuple[int, ...]:
+    """Observation index of each actuated joint's reference TARGET angle.
+
+    The production goal (``MorphGoalTrajMimicRootErr``) already emits the
+    body-correct, limit-clamped ``reference_qpos`` as a flat block inside its
+    goal observation.  This maps each actuated joint (actuator order) to that
+    block, so the vec env can gather "this joint's target" into this joint's
+    URMA block — the per-joint alignment urma2 has structurally and this stack
+    only had as an unaligned flat vector.
+    """
+    from scaling.body_correct_goal import goal_block_slices
+
+    goal = env._goal
+    type_name = type(goal).__name__
+    entries = [
+        e for e in env.obs_container.values()
+        if type(e).__name__ == type_name
+    ]
+    if len(entries) != 1 or getattr(entries[0], "obs_ind", None) is None:
+        raise ValueError(
+            f"Expected exactly one goal observation entry of type "
+            f"{type_name!r} with obs_ind; found {len(entries)}."
+        )
+    flat = np.asarray(entries[0].obs_ind, dtype=np.int64)
+    if len(flat) != int(goal.dim):
+        raise ValueError(
+            f"Goal obs entry spans {len(flat)} dims but the goal advertises "
+            f"{int(goal.dim)}."
+        )
+    slices = goal_block_slices(goal)
+    ref_slice = slices["reference_qpos"]
+
+    model = env._model
+    action_dim = int(env.info.action_space.shape[0])
+    joint_ids = actuated_joint_ids(model, action_dim)
+    qpos_adrs = np.asarray(model.jnt_qposadr[joint_ids], dtype=np.int64)
+    goal_qpos_ind = np.asarray(goal._qpos_ind, dtype=np.int64)
+
+    rows = []
+    for adr in qpos_adrs:
+        match = np.nonzero(goal_qpos_ind == adr)[0]
+        if len(match) != 1:
+            raise ValueError(
+                f"Actuated joint qpos address {int(adr)} maps to "
+                f"{len(match)} rows of the goal's reference_qpos block; "
+                "expected exactly one."
+            )
+        rows.append(int(match[0]))
+    return tuple(int(flat[ref_slice.start + row]) for row in rows)
+
+
+def build_joint_block_spec(
+    env, name: str, include_reference_targets: bool = False
+) -> JointBlockSpec:
     """Assemble one robot's structural joint block from a built MJX environment."""
     model = env._model
     action_dim = int(env.info.action_space.shape[0])
     position_indices, velocity_indices = joint_observation_indices(env)
     joint_ids = actuated_joint_ids(model, action_dim)
+    target_indices = (
+        reference_target_obs_indices(env) if include_reference_targets else None
+    )
     return JointBlockSpec(
         name=str(name),
         num_joints=action_dim,
@@ -220,4 +289,5 @@ def build_joint_block_spec(env, name: str) -> JointBlockSpec:
             str(mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, int(joint_id)))
             for joint_id in joint_ids
         ),
+        target_obs_indices=target_indices,
     )
