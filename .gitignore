@@ -89,3 +89,48 @@ loco-mujoco/mushroom_rl_recordings/
 loco-mujoco/record_all/
 loco-mujoco/loco_mujoco/models/myo_model/
 loco-mujoco/loco_mujoco/smpl/conf_paths.yaml
+
+# ChatGPT Repomix packs (regenerate with chatgpt-context/pack.ps1)
+chatgpt-context/00-*.md
+chatgpt-context/01-*.md
+chatgpt-context/02-*.md
+chatgpt-context/*.xml
+repomix-output.*
+
+# ---------------------------------------------------------------------------
+# Experiment outputs (checkpoints, logs, media, even copied venvs — many GB)
+# ---------------------------------------------------------------------------
+experiments/
+tmp/
+.ruff_cache/
+
+# Local-only tooling, result gallery and dashboards (kept out of the repo)
+.claude/
+dashboards/
+images/
+repomix.config.json
+/run_h1g1_urma_pipeline.sh
+/run_multimotion.sh
+/run_overnight.sh
+/collect_h1g1_handoff.sh
+
+# Generated reference / retargeted motion data (regenerate with scripts/scaling)
+external_data/cross_humanoid/
+external_data/deepmimic_dance/
+external_data/deepmimic_dance_subject2/
+external_data/deepmimic_dance_subject2_short/
+external_data/deepmimic_morphology/
+external_data/fsq_canonical/
+external_data/overnight_1808_clips/
+
+# Generated morphology variant models (regenerate with scripts/*_morphology_variants.py)
+# Note: a few nominal/tall-light XMLs were committed before this rule; they stay tracked.
+generated_variants/
+
+# Vendored reference repos (each has its own .git; read-only references)
+jadex/
+one_policy_to_run_them_all/
+embodiment-scaling-laws/
+
+# One-off helper bundles
+h1g1_urma_pipeline_bundle.zip
