@@ -1,8 +1,7 @@
 # Onboarding — from `git clone` to a trained policy
 
 Audience: a colleague joining the FSQ / URMA2 DeepMimic work (state as of 2026-08-27).
-The plain-language project summary lives in `docs/notes/FSQ_STATUS_FOR_SUPERVISORS.md`;
-the experiment reports are under `experiments/fsq_khaendler/REPORT_*.md` (read
+The experiment reports are under `experiments/fsq_khaendler/REPORT_*.md` (read
 `REPORT_FSQ_WAVE2.md` last-first — each report supersedes recipe details of the previous one).
 
 ## 1. What this repo actually is
@@ -18,7 +17,7 @@ here; the training stack itself lives in submodules.
 | `experiments/urma2_h1g1/run.sh` | **The main launcher.** Stage-based (`smoke`, `mmtrain`, `mmsplit`, …); every reward/env knob is an env var with a documented default. |
 | `experiments/fsq_khaendler/` | The FSQ campaign: per-arm launchers (`run_arm.sh`), Viper sbatch files, crossevals (`ce_*/`), reports, dashboards, tokenizer outputs. |
 | `scripts/scaling/khaendler_fsq_clip.py`, `canonical_fsq_clip.py` | The two tokenizer trainers (per-joint / canonical). `canonical_zq_sidecar.py`, `scramble_zq.py`, `stitch_novel_clip.py`, `derive_clip_signs.py` are the supporting tools. |
-| `docs/notes/` | Design notes. Only the FSQ synthesis docs are tracked (`FSQ_STATUS_FOR_SUPERVISORS.md`, `FSQ_DESIGN_NEXT.md`, `FSQ_NEXT_WAVE.md`); per-night goal docs stay local. Note `experiments/` and `docs/notes/` are gitignored by default — the tracked files there were added explicitly, so `git add` new files in those trees with `-f`. |
+| `docs/notes/` | **Gitignored.** Local design notes, goal docs and supervisor summaries — not in the clone. |
 | `external_data/`, `videos/`, `experiments/*/media` | **Gitignored.** Clips, checkpoints and renders are not in git. |
 
 Older top-level scripts (`run_multimotion.sh`, `run_overnight.sh`, `scripts/overnight/`)
@@ -152,7 +151,7 @@ Rules (each one is a lesson that invalidated an earlier claim):
    FSQ arms; only executed-vs-raw-clip RMSE counts.
 5. Known blind spots of all current numbers: heading is unscored by reward and was
    until 08-27 unscored by the crosseval (every arm ends ~82° off), and foot-height
-   tracking is off by default. See `docs/notes/FSQ_NEXT_WAVE.md` for the fix plan.
+   tracking is off by default.
 
 Aggregation/plots: `experiments/fsq_khaendler/plot_wave2.py`, `build_*dashboard.py`,
 `tools/agg_wave2.py` (Viper side); curves are scraped to `curves_all.csv` (local/cluster
@@ -162,5 +161,4 @@ artifact, not in git).
 
 Chronological: `experiments/urma_fsq_overnight_20260813/RESULTS.md` → `experiments/fsq_khaendler/REPORT_2026-08-22.md` →
 `REPORT_overnight_fix.md` → `REPORT_feet_fsq.md` → `REPORT_ladder.md` →
-`REPORT_FSQ_SCALE.md` → `REPORT_FSQ_WAVE2.md` (newest). Design/next steps:
-`docs/notes/FSQ_DESIGN_NEXT.md` and `FSQ_NEXT_WAVE.md`.
+`REPORT_FSQ_SCALE.md` → `REPORT_FSQ_WAVE2.md` (newest).
