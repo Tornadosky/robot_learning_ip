@@ -107,6 +107,7 @@ tmp/
 # Local-only tooling, result gallery and dashboards (kept out of the repo)
 .claude/
 dashboards/
+docs/notes/
 images/
 repomix.config.json
 /run_h1g1_urma_pipeline.sh
