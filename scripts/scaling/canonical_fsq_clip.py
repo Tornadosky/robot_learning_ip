@@ -50,11 +50,33 @@ CANONICAL_EE_SITES = (
 )
 
 
-def canonical_features_from_npz(d) -> np.ndarray:
+# 2026-08-26: every clip carries 16 mimic sites on BOTH robots, knees and
+# elbows among them. The original 4-end-effector set was the reason the encoder
+# could not see the joints its reconstruction was worst at; --sites makes the
+# set a parameter so that claim is testable rather than structural.
+CANONICAL_SITES_RICH = (
+    "left_hip_mimic", "left_knee_mimic", "left_foot_mimic",
+    "right_hip_mimic", "right_knee_mimic", "right_foot_mimic",
+    "upper_body_mimic", "head_mimic",
+    "left_shoulder_mimic", "left_elbow_mimic", "left_hand_mimic",
+    "right_shoulder_mimic", "right_elbow_mimic", "right_hand_mimic",
+)
+SITE_SETS = {"ee4": CANONICAL_EE_SITES, "rich14": CANONICAL_SITES_RICH}
+
+
+def canonical_features_from_npz(d, include_source_joints: bool = False,
+                                sites=CANONICAL_EE_SITES) -> np.ndarray:
     """(T, 22) canonical task-space features straight from a clip npz.
 
     Same math as fsq_motion.canonical_frame_features, but reading the npz's
     stored per-frame site_xpos instead of a Trajectory object.
+
+    include_source_joints appends the SOURCE robot's joint angles (T, J).
+    Measured 2026-08-22: the 22 task-space dims underdetermine the pose —
+    canonical reconstruction is pinned at ~0.3 rad across data size, epochs
+    AND a 1M-code codebook (7445/9025 unique codes used, RMSE unchanged), with
+    the error concentrated in elbows/knees, the joints task-space cannot see.
+    The token stays embodiment-portable: consumers only ever see z.
     """
     from scaling.fsq_motion import _quat_to_rotmat
 
@@ -62,10 +84,10 @@ def canonical_features_from_npz(d) -> np.ndarray:
     qvel = np.asarray(d["qvel"], dtype=np.float64)
     site_names = [str(n) for n in d["site_names"]]
     site_xpos = np.asarray(d["site_xpos"], dtype=np.float64)
-    missing = [s for s in CANONICAL_EE_SITES if s not in site_names]
+    missing = [s for s in sites if s not in site_names]
     if missing:
-        raise ValueError(f"clip lacks canonical EE sites: {missing}")
-    ee_idx = [site_names.index(s) for s in CANONICAL_EE_SITES]
+        raise ValueError(f"clip lacks canonical sites: {missing}")
+    ee_idx = [site_names.index(s) for s in sites]
 
     root_pos = qpos[:, 0:3]
     rot = _quat_to_rotmat(qpos[:, 3:7])
@@ -75,11 +97,11 @@ def canonical_features_from_npz(d) -> np.ndarray:
     angvel = qvel[:, 3:6]
     ee_rel = site_xpos[:, ee_idx, :] - root_pos[:, None, :]
     ee_in_root = np.einsum("nij,nkj->nki", world_to_root, ee_rel)
-    return np.concatenate(
-        [root_pos[:, 2:3], gravity, linvel, angvel,
-         ee_in_root.reshape(qpos.shape[0], -1)],
-        axis=-1,
-    ).astype(np.float32)
+    parts = [root_pos[:, 2:3], gravity, linvel, angvel,
+             ee_in_root.reshape(qpos.shape[0], -1)]
+    if include_source_joints:
+        parts.append(qpos[:, 7:])
+    return np.concatenate(parts, axis=-1).astype(np.float32)
 
 
 def feature_windows(features: np.ndarray, lookahead: int) -> np.ndarray:
@@ -108,26 +130,44 @@ def cmd_build(args):
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    src = np.load(Path(args.clip_dir) / args.source_robot / args.clip, allow_pickle=True)
-    features = canonical_features_from_npz(src)
-    fwin = feature_windows(features, args.lookahead)
+    # Windows are built PER CLIP and then concatenated, so lookahead clamping
+    # stays clip-local and no window straddles a clip boundary.
+    clips = list(args.clip)
+    fwins, frames_per_clip = [], []
+    feature_dim = None
+    for clip in clips:
+        src = np.load(Path(args.clip_dir) / args.source_robot / clip, allow_pickle=True)
+        features = canonical_features_from_npz(
+            src, include_source_joints=args.include_source_joints,
+            sites=SITE_SETS[args.sites])
+        feature_dim = int(features.shape[1])
+        frames_per_clip.append(int(features.shape[0]))
+        fwins.append(feature_windows(features, args.lookahead))
+    fwin = np.concatenate(fwins, axis=0)
 
     data = {"features": fwin.astype(np.float32)}
     meta = {
         "source_robot": args.source_robot,
-        "clip": args.clip,
+        "clip": ",".join(clips),
+        "clips": clips,
+        "frames_per_clip": frames_per_clip,
         "clip_dir": str(args.clip_dir),
         "lookahead": args.lookahead,
-        "feature_dim": int(features.shape[1]),
+        "feature_dim": feature_dim,
+        "sites": args.sites,
         "robots": args.robots,
-        "frames": int(features.shape[0]),
+        "frames": int(fwin.shape[0]),
     }
     for robot in args.robots:
         desc, joint_names = build_robot_assets(robot)
-        qpos, qvel, _ = load_clip_joints(Path(args.clip_dir) / robot / args.clip, joint_names)
-        if qpos.shape[0] != features.shape[0]:
-            raise ValueError(f"{robot} frame count {qpos.shape[0]} != source {features.shape[0]}")
-        data[f"{robot}_targets"] = build_windows(qpos, qvel, args.lookahead).astype(np.float32)
+        targets = []
+        for ci, clip in enumerate(clips):
+            qpos, qvel, _ = load_clip_joints(Path(args.clip_dir) / robot / clip, joint_names)
+            if qpos.shape[0] != frames_per_clip[ci]:
+                raise ValueError(
+                    f"{robot} {clip} frame count {qpos.shape[0]} != source {frames_per_clip[ci]}")
+            targets.append(build_windows(qpos, qvel, args.lookahead).astype(np.float32))
+        data[f"{robot}_targets"] = np.concatenate(targets, axis=0)
         data[f"{robot}_desc"] = desc
         data[f"{robot}_joints"] = np.array(joint_names)
     np.savez_compressed(out / "dataset.npz", **data)
@@ -223,8 +263,13 @@ def cmd_train(args):
     n_test = max(1, int(T * args.test_fraction))
     train_end = max(1, T - n_test - lookahead)
 
-    model = make_model(bundle, DEFAULT_LEVELS[:args.latent_dim] if args.latent_dim != len(DEFAULT_LEVELS)
-                       else DEFAULT_LEVELS, args.latent_dim, lookahead, args.width)
+    # --levels is authoritative when given: latent_dim = len(levels). The
+    # single-token codebook (1000 codes) is the canonical design's measured
+    # bottleneck (repeatedly ~900/1000 codes used, RMSE stuck ~0.3 rad), so
+    # scaling it is a first-class experiment, not a tweak.
+    levels = tuple(args.levels) if args.levels else DEFAULT_LEVELS[: args.latent_dim]
+    latent_dim = len(levels)
+    model = make_model(bundle, levels, latent_dim, lookahead, args.width)
 
     rng = jax.random.PRNGKey(args.seed)
     r0 = robots[0]
@@ -284,7 +329,7 @@ def cmd_train(args):
     (out / "params.msgpack").write_bytes(flax.serialization.to_bytes(state.params))
     np.savez(out / "feature_norm.npz", mean=mean, std=std)
     (out / "config.json").write_text(json.dumps({
-        "levels": list(DEFAULT_LEVELS), "latent_dim": args.latent_dim,
+        "levels": list(levels), "latent_dim": latent_dim,
         "lookahead": lookahead, "width": args.width, "epochs": args.epochs,
         "batch_size": args.batch_size, "lr": args.lr, "seed": args.seed,
         "test_fraction": args.test_fraction,
@@ -395,9 +440,15 @@ def main():
     b = sub.add_parser("build")
     b.add_argument("--robots", nargs="+", default=["UnitreeH1", "UnitreeG1"])
     b.add_argument("--source-robot", default="UnitreeH1")
-    b.add_argument("--clip", default="dance2_subject4.npz")
+    b.add_argument("--clip", nargs="+", default=["dance2_subject4.npz"])
     b.add_argument("--clip-dir", default=str(DEFAULT_CLIP_DIR))
     b.add_argument("--lookahead", type=int, default=10)
+    b.add_argument("--include-source-joints", action="store_true", default=False)
+    b.add_argument("--sites", default="ee4", choices=sorted(SITE_SETS),
+                   help="which task-space sites the token encodes. ee4 = the two "
+                        "feet and two hands (the 22-dim design that reconstructs "
+                        "at 0.37 rad); rich14 adds hips, knees, shoulders, elbows, "
+                        "chest and head -- the joints ee4 cannot see.")
     b.add_argument("--out", required=True)
     b.set_defaults(fn=cmd_build)
 
@@ -405,6 +456,8 @@ def main():
     t.add_argument("--bundle", required=True)
     t.add_argument("--out", required=True)
     t.add_argument("--latent-dim", type=int, default=4)
+    t.add_argument("--levels", type=int, nargs="+", default=None,
+                   help="FSQ levels per latent dim; overrides --latent-dim")
     t.add_argument("--width", type=float, default=1.0)
     t.add_argument("--epochs", type=int, default=500)
     t.add_argument("--batch-size", type=int, default=256)

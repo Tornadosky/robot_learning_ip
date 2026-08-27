@@ -161,6 +161,21 @@ def make_model(args, n_step_lookahead: int):
     )
 
 
+def load_desc(robot: str, desc_cache):
+    """Joint descriptions for `robot`.
+
+    The 47-dim description vector depends only on the nominal model, so it is
+    identical across every fit — which lets a cached `descriptions.npz` stand in
+    for the whole loco-mujoco stack on machines that only carry the trainer
+    (Viper has loco_mjx, not loco-mujoco).  Verified identical across the four
+    tokenizers fitted locally.
+    """
+    if not desc_cache:
+        return build_robot_assets(robot)
+    store = np.load(desc_cache, allow_pickle=True)
+    return store[f"{robot}_desc"], [str(n) for n in store[f"{robot}_joints"]]
+
+
 def cmd_train(args):
     from loco_mujoco.algorithms.autoencoder.train.step import (
         create_train_state,
@@ -174,7 +189,7 @@ def cmd_train(args):
 
     per_robot = {}
     for robot in args.robots:
-        desc, joint_names = build_robot_assets(robot)
+        desc, joint_names = load_desc(robot, getattr(args, 'desc_cache', None))
         qpos, qvel, _ = load_clip_joints(Path(args.clip_dir) / robot / args.clip, joint_names)
         windows = build_windows(qpos, qvel, args.lookahead)
         T = windows.shape[0]
@@ -397,6 +412,9 @@ def main():
     t.add_argument("--seed", type=int, default=42)
     t.add_argument("--test-fraction", type=float, default=0.1)
     t.add_argument("--log-every", type=int, default=10)
+    t.add_argument("--desc-cache", default=None,
+                   help="descriptions.npz from a previous fit; skips the "
+                        "loco-mujoco model compile (nominal bodies only)")
     t.set_defaults(fn=cmd_train)
 
     r = sub.add_parser("reconstruct")

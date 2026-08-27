@@ -1,6 +1,22 @@
 {
+  "nominal": {
+    "xml_path": "/mnt/c/Users/smirn/Desktop/robot_learning_ip/generated_variants/h1_morphology_nominal/h1.xml",
+    "name": "nominal",
+    "label": "Nominal H1",
+    "leg_length_scale": 1.0,
+    "arm_length_scale": 1.0,
+    "shoulder_width_scale": 1.0,
+    "foot_scale_xyz": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "torso_mass_scale": 1.0,
+    "floor_adjustment_meters": 0.0012000085647466945,
+    "total_mass_kg": 51.437
+  },
   "extreme_tall_light": {
-    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_extreme_tall_light\\h1.xml",
+    "xml_path": "/mnt/c/Users/smirn/Desktop/robot_learning_ip/generated_variants/h1_morphology_extreme_tall_light/h1.xml",
     "name": "extreme_tall_light",
     "label": "Extreme: tall and light",
     "leg_length_scale": 1.5,
@@ -16,7 +32,7 @@
     "total_mass_kg": 47.906687999999995
   },
   "extreme_short_heavy": {
-    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_extreme_short_heavy\\h1.xml",
+    "xml_path": "/mnt/c/Users/smirn/Desktop/robot_learning_ip/generated_variants/h1_morphology_extreme_short_heavy/h1.xml",
     "name": "extreme_short_heavy",
     "label": "Extreme: short and heavy",
     "leg_length_scale": 0.68,
@@ -32,7 +48,7 @@
     "total_mass_kg": 75.91062000000002
   },
   "extreme_combined": {
-    "xml_path": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\generated_variants\\h1_morphology_extreme_combined\\h1.xml",
+    "xml_path": "/mnt/c/Users/smirn/Desktop/robot_learning_ip/generated_variants/h1_morphology_extreme_combined/h1.xml",
     "name": "extreme_combined",
     "label": "Extreme: combined stress case",
     "leg_length_scale": 1.42,
