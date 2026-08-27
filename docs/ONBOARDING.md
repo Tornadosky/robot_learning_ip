@@ -18,7 +18,7 @@ here; the training stack itself lives in submodules.
 | `experiments/urma2_h1g1/run.sh` | **The main launcher.** Stage-based (`smoke`, `mmtrain`, `mmsplit`, …); every reward/env knob is an env var with a documented default. |
 | `experiments/fsq_khaendler/` | The FSQ campaign: per-arm launchers (`run_arm.sh`), Viper sbatch files, crossevals (`ce_*/`), reports, dashboards, tokenizer outputs. |
 | `scripts/scaling/khaendler_fsq_clip.py`, `canonical_fsq_clip.py` | The two tokenizer trainers (per-joint / canonical). `canonical_zq_sidecar.py`, `scramble_zq.py`, `stitch_novel_clip.py`, `derive_clip_signs.py` are the supporting tools. |
-| `docs/notes/` | Goal docs (pre-registered gates) and design notes per campaign. |
+| `docs/notes/` | Design notes. Only the FSQ synthesis docs are tracked (`FSQ_STATUS_FOR_SUPERVISORS.md`, `FSQ_DESIGN_NEXT.md`, `FSQ_NEXT_WAVE.md`); per-night goal docs stay local. Note `experiments/` and `docs/notes/` are gitignored by default — the tracked files there were added explicitly, so `git add` new files in those trees with `-f`. |
 | `external_data/`, `videos/`, `experiments/*/media` | **Gitignored.** Clips, checkpoints and renders are not in git. |
 
 Older top-level scripts (`run_multimotion.sh`, `run_overnight.sh`, `scripts/overnight/`)
@@ -99,7 +99,7 @@ mis-anchored reference), `TRACK_TEMP=0.05` (the one lever that improves leg trac
 the old "never below 0.25" comment in the config is measured-false), `GAITMODE=floor`
 + the high contact dose (without it foot terms multiply to zero — the 08-24 bug).
 `experiments/fsq_khaendler/run_arm.sh` wraps exactly this with a GPU lock for queueing
-several arms; the `viper_submit_*.sh` files record the exact env of every past arm.
+several arms; `viper_submit_wave2.sh` records the exact env of every wave-2 arm.
 
 Budget feel: ~11.6M steps/hour on an RTX 4060 Ti; the standard arm is 98.3M ≈ 8.5 h.
 First compile of a topology is ~4–10 min; the launcher enables the JAX persistent
@@ -155,7 +155,8 @@ Rules (each one is a lesson that invalidated an earlier claim):
    tracking is off by default. See `docs/notes/FSQ_NEXT_WAVE.md` for the fix plan.
 
 Aggregation/plots: `experiments/fsq_khaendler/plot_wave2.py`, `build_*dashboard.py`,
-`tools/agg_wave2.py` (Viper side); curves are scraped to `curves_all.csv`.
+`tools/agg_wave2.py` (Viper side); curves are scraped to `curves_all.csv` (local/cluster
+artifact, not in git).
 
 ## 6. Where to read what happened so far
 

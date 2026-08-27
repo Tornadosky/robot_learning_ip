@@ -1,0 +1,24 @@
+| arm | robot | exec-vs-raw shape/abs | pen (m) | airborne (ref) | zspeed^2 (ref) | slip^2 | height err | gates |
+|---|---|---|---|---|---|---|---|---|
+| ff_footh | h1 | 0.222/0.273 | 0.0165 | 0.035 (0.000) | 1.035 | 1.1522 | 0.00618 | penFAIL floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_footh | g1 | 0.202/0.278 | 0.0034 | 0.102 (0.000) | 0.519 | 0.1971 | 0.00377 | penPASS floatFAIL fidelityFAIL fastFAIL slipFAIL |
+| ff_footh_gait | h1 | 0.220/0.261 | 0.0197 | 0.046 (0.000) | 1.355 | 1.2611 | 0.00721 | penFAIL floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_footh_gait | g1 | 0.184/0.244 | 0.0037 | 0.094 (0.000) | 0.440 | 0.2327 | 0.00357 | penPASS floatPASS fidelityPASS fastPASS slipFAIL |
+| ff_gait_dose | h1 | 0.227/0.290 | 0.0099 | 0.056 (0.000) | 0.776 | 0.5673 | 0.00595 | penPASS floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_gait_dose | g1 | 0.213/0.285 | 0.0032 | 0.131 (0.000) | 0.513 | 0.1638 | 0.00333 | penPASS floatFAIL fidelityFAIL fastFAIL slipFAIL |
+| ff_gait_pc | h1 | 0.221/0.264 | 0.0199 | 0.054 (0.000) | 1.146 | 1.0457 | 0.00703 | penFAIL floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_gait_pc | g1 | 0.213/0.307 | 0.0036 | 0.084 (0.000) | 0.544 | 0.2077 | 0.00357 | penPASS floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_reffloor | h1 | 0.228/0.276 | 0.0221 | 0.034 (0.000) | 1.149 | 1.1356 | 0.00656 | penFAIL floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_reffloor | g1 | 0.210/0.275 | 0.0044 | 0.110 (0.000) | 0.642 | 0.2608 | 0.00412 | penPASS floatFAIL fidelityPASS fastFAIL slipFAIL |
+| ff_super_ref | h1 | 0.220/0.259 | 0.0183 | 0.040 (0.000) | 1.526 | 1.2582 | 0.00747 | penFAIL floatPASS fidelityFAIL fastFAIL slipFAIL |
+| ff_super_ref | g1 | 0.201/0.250 | 0.0037 | 0.106 (0.000) | 0.596 | 0.2325 | 0.00430 | penPASS floatFAIL fidelityPASS fastFAIL slipFAIL |
+| g0_fx_dance | h1 | 0.187/0.218 | 0.0212 | 0.036 (0.000) | 1.515 | 1.0031 | 0.00662 | penFAIL floatPASS fidelityPASS fastFAIL slipFAIL |
+| g0_fx_dance | g1 | 0.192/0.257 | 0.0048 | 0.122 (0.000) | 0.881 | 0.3131 | 0.00457 | penPASS floatFAIL fidelityPASS fastFAIL slipFAIL |
+| g0_fx_walk | h1 | 0.187/0.207 | 0.0224 | 0.049 (0.000) | 1.727 | 1.6112 | 0.00535 | penFAIL floatPASS fidelityPASS fastFAIL slipFAIL |
+| g0_fx_walk | g1 | 0.168/0.223 | 0.0047 | 0.091 (0.000) | 0.494 | 0.2616 | 0.00219 | penPASS floatPASS fidelityPASS fastFAIL slipFAIL |
+| g0_fx_walk_softc | h1 | 0.166/0.186 | 0.0171 | 0.031 (0.000) | 1.360 | 1.6571 | 0.00383 | penFAIL floatPASS fidelityPASS fastFAIL slipFAIL |
+| g0_fx_walk_softc | g1 | 0.152/0.199 | 0.0040 | 0.059 (0.000) | 0.324 | 0.3067 | 0.00167 | penPASS floatPASS fidelityPASS fastPASS slipFAIL |
+| zeroshot_ff_z_fix | h1 | 0.213/0.258 | 0.0160 | 0.036 (0.000) | 1.021 | 1.2739 | 0.00404 | penFAIL floatPASS fidelityFAIL fastFAIL slipFAIL |
+| zeroshot_ff_z_fix | g1 | 0.197/0.264 | 0.0035 | 0.076 (0.000) | 0.414 | 0.2967 | 0.00218 | penPASS floatPASS fidelityPASS fastPASS slipFAIL |
+| zeroshot_ff_z_hold5 | h1 | 0.205/0.241 | 0.0143 | 0.030 (0.000) | 0.713 | 1.0916 | 0.00357 | penFAIL floatPASS fidelityFAIL fastPASS slipFAIL |
+| zeroshot_ff_z_hold5 | g1 | 0.188/0.278 | 0.0028 | 0.070 (0.000) | 0.297 | 0.2694 | 0.00194 | penPASS floatPASS fidelityFAIL fastPASS slipFAIL |

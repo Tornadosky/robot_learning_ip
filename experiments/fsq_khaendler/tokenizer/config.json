@@ -1,0 +1,22 @@
+{
+  "robots": [
+    "UnitreeH1",
+    "UnitreeG1"
+  ],
+  "clip": "dance2_subject4.npz",
+  "clip_dir": "C:\\Users\\smirn\\Desktop\\robot_learning_ip\\external_data\\amass_converted\\LAFAN1",
+  "lookahead": 10,
+  "latent_dim": 32,
+  "fsq_levels": 8,
+  "width": 1.0,
+  "epochs": 500,
+  "batch_size": 256,
+  "lr": 0.0015,
+  "seed": 42,
+  "test_fraction": 0.1,
+  "final_train_loss": 0.14524426215117978,
+  "final_eval_loss": {
+    "UnitreeH1": 0.08315058797597885,
+    "UnitreeG1": 0.12365483492612839
+  }
+}
