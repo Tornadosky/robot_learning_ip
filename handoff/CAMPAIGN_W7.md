@@ -75,6 +75,15 @@ Robot screening (`scripts/scaling/wave7/screen_family.py`): Atlas residual 0.000
 
 ## 3. BOX-B (Ubuntu, RTX 5080): exactly what to do
 
+**Preferred transfer: ssh/rsync over the LAN (the user provides ssh access; no zips).** From BOX-A (WSL):
+```
+B=user@<box-b-ip>; D=/home/<user>/robot_learning_ip     # fill in
+rsync -a --info=progress2 experiments/fsq_khaendler/{clips_m20,clips_5r,tokenizer_m20,tokenizer_3t_v2,clips_3t_v2} $B:$D/experiments/fsq_khaendler/
+rsync -a external_data/amass_converted/{LAFAN1_all,LAFAN1_allfix} $B:$D/external_data/amass_converted/    # raw clips for evals / retargets (7.5 GB)
+rsync -a handoff/ $B:$D/handoff/
+```
+Then on BOX-B: clone + `bash handoff/bootstrap_second_machine.sh $D` (or, if the repo is already cloned, just `git pull` and re-run the submodule bundle step). Every launcher takes `REPO=$D PY=~/jaxgpu/bin/python`.
+
 ```
 git clone --depth 1 https://github.com/Tornadosky/robot_learning_ip.git && cd robot_learning_ip
 bash handoff/bootstrap_second_machine.sh $PWD          # venvs from bundles + requirements
