@@ -19,7 +19,7 @@ if [ ! -d "$DEST/.git" ]; then
   git clone --depth 1 "$REPO" "$DEST"
 fi
 cd "$DEST"
-git submodule update --init --recursive loco_mjx loco-mujoco RL-X
+git submodule update --init --recursive loco_mjx loco-mujoco RL-X || echo "(gitlink commits are local: fetched from the bundles next)"
 
 # 2. our local submodule commits travel as bundles (the upstream remotes do not
 #    have them); each bundle fast-forwards from the upstream commit it was cut at
