@@ -15,7 +15,8 @@ DEST=${1:?target directory, e.g. /mnt/c/Users/you/Desktop/robot_learning_ip}
 REPO=https://github.com/Tornadosky/robot_learning_ip.git
 
 if [ ! -d "$DEST/.git" ]; then
-  git clone "$REPO" "$DEST"
+  # shallow: the main repo history carries ~21 GB of committed data files
+  git clone --depth 1 "$REPO" "$DEST"
 fi
 cd "$DEST"
 git submodule update --init --recursive loco_mjx loco-mujoco RL-X

@@ -8,7 +8,7 @@ scripts default to it; override with `REPO=... PY=...`).
 ## 1. Code (5 min)
 
 ```
-git clone https://github.com/Tornadosky/robot_learning_ip.git
+git clone --depth 1 https://github.com/Tornadosky/robot_learning_ip.git   # full history is ~21 GB of old data blobs
 cd robot_learning_ip
 bash handoff/bootstrap_second_machine.sh $PWD      # inside WSL
 ```
@@ -30,6 +30,8 @@ swap=16GB
 JAX processes at once inside WSL: three concurrent compiles restarted the VM.
 
 ## 2. Data (copy over LAN or a USB disk; ~3.4 GB minimum)
+
+Do NOT copy `viper_mirror/` (31 GB cluster cache), `.git/` (21 GB), `loco_mjx/experiments/runs/`, or `experiments/` beyond the dirs below.
 
 | path (relative to repo) | size | needed for |
 |---|---|---|
