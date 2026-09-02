@@ -130,3 +130,58 @@ Then D1: `.venv\Scripts\python.exe scripts/scaling/wave7/retarget_dancedb.py` (W
 - T1's arm retarget has hands 14–23 cm off on dance2_subject4 (legs fine); Atlas/Apollo re-issue verified on one dance (0.2 % out of range).
 - Viper cannot run >2 robots (fused and split trainers both fault) — no workaround found; all multi-robot evidence is local.
 - Reboot kills WSL processes and the Viper ssh masters; everything local is resumable via `after_restart.sh`.
+
+## 6. Overnight agent brief (2026-09-02 22:00 → morning of 2026-09-03)
+
+Goal for the night: every GPU busy all night, Viper queue never empty, no wrong data. Read §0–§5 first.
+
+### 6.1 Data audit verdict (done 21:55, `scripts/scaling/wave7/verify_clips_5r.py`, report `clips_5r/verify_report.json`)
+- Every clip of every robot: no NaN, sidecars present with matching frame counts and joint names
+  (G1's clip carries 23 of the model's 29 joints; waist roll/pitch and wrists are untracked, as in all G1 results).
+- Joint feasibility in the model's own sign convention (loader alias + sign tables applied): H1 1.8 % of frames
+  over a range by ≤0.21 rad (arm yaw), G1 0.1 % / ≤0.02 rad, T1 1.7 % / ≤0.06 rad, Atlas 6.5 % / ≤0.09 rad,
+  **Apollo 56 % / ≤0.21 rad (shoulder internal rotation, model range ±0.47 rad)**.
+- Fix applied 21:52 (`clamp_clips_to_model.py`, H1 + Atlas + Apollo, then sidecars re-emitted with
+  `emit_sidecars_any.py`): references are now inside the model ranges; G1/T1 left untouched (negligible).
+  The right-side "violations" a naive audit shows (knee ~1.8 rad) are the loco_mjx right-leg axis negation that
+  the loader's sign tables handle — not a data bug.
+- Frame counts: H1/G1 clips have 2 more frames per motion than T1/Atlas/Apollo (re-issue trims the ends);
+  each robot tracks its own clip, so this does not matter for training; cross-robot token comparisons are
+  offset by ≤2 frames (≤0.05 s).
+- Motions: 20 train (7 dances, 6 walks, 2 runs, 1 sprint, 2 jumps, 2 fights) + 7 held-out (one per family),
+  lists in `clips_m20/{train,heldout}_motions.txt`; held-out never enters super20 or the tokenizer.
+- Robots: H1/G1/T1 validated earlier (3-topology baseline 1.7–1.9x vs floor); Atlas/Apollo screened by
+  `screen_family.py` (FK residual 1.6e-4 / exact positions). Nothing has been trained on Atlas/Apollo yet —
+  the first 5-robot arms ARE the validation; inspect their per-robot tracking early (see 6.4).
+
+### 6.2 Machine loops (what "busy" means)
+| machine | orchestrator | next when it finishes |
+|---|---|---|
+| BOX-A (this box, WSL) | `after_restart.sh` → `local_night7.sh`: w7_cot5 (5-robot co-trained, 59M) → w7_ref5 skipped if BOX-B has it → DanceDB retarget batch | morphology cross-evals of w7_* checkpoints (CUDA only: BOX-A or BOX-B), renders |
+| BOX-B (5080) | `boxb_night7.sh`: smoke ✓ → w7_ref5 → w7_cot5_h20 → w7_ref5_h20 | 3rd/4th arms: `w7_cot5 SEED=2`, khaendler-encoder tokenizer (K1), DanceDB re-issue on CPU |
+| VIPER | wave 7a (23 trains / 253 CEs) submitted 19:34; 31 running / 90 pending at 22:00 | when pending < 20: submit Tier-2 (`submit_w7b.sh`, to write: seeds 3 of m20ref/split/cot 1x+2x, hold-20 trio seeds 2, m7 trio seeds 2, 4x split) |
+
+Rules that cost a night when broken: ONE JAX process per GPU (a second compile restarts WSL on BOX-A);
+torch retargets on the same GPU slow JAX 3x (DanceDB only after the arms, or on BOX-B's CPU); Viper:
+never `scancel` other users' jobs, submissions as script FILES, verify arm configs from the RESOLVED log
+line (`=== local_train ...` / sbatch echo), never from the template; a claim needs n≥2 seeds.
+
+### 6.3 CPU fillers (32 cores on BOX-B, 16 on BOX-A)
+- DanceDB → other robots: `reissue_clips.py --src-dir external_data/amass_converted/DanceDB --out-root
+  external_data/amass_converted/DanceDB_fix --targets UnitreeG1 BoosterT1 Atlas Apollo` (mujoco, CPU; needs the
+  H1 DanceDB clips from BOX-A's `retarget_dancedb.py` batch first — rsync them over).
+- Offline CE scoring / ledger aggregation (`build_ledger.py` + the w7 aggregation still to add).
+- Data audits on any new clip set (`verify_clips_5r.py --clip-dir ...`) BEFORE training on it.
+
+### 6.4 Early-warning checks on the 5-robot arms (do at ~2M, ~6M, ~15M steps)
+- `grep -o "nr_env_steps[^0-9]*[0-9]*" <arm>.log | tail -1` moves; steps/s ≥ 1.5k on BOX-B, ≥ 1k on BOX-A.
+- per-robot `reward/joint_tracking` (log_info=True) rises for ALL five; a flat robot at 6M = its reference or
+  sign table is wrong → drop it from `clips_5r/ROBOTS` and relaunch (the orchestrators read ROBOTS at start).
+- KL that never calms by ~2M = takeoff-basin failure (memory rule): kill, relaunch with fewer robots.
+- checkpoints appear every 1.97M under `loco_mjx/experiments/runs/local_w7/<name>/`.
+
+### 6.5 Morning
+- Viper: fetch `/ptmp/akalenik/urma/crosseval/m20*` → `experiments/fsq_khaendler/crosseval_viper/`; add the w7
+  aggregation to `build_ledger.py`; republish the ledger.
+- rsync BOX-B checkpoints back (`rsync -a melo@192.168.178.41:$D/loco_mjx/experiments/runs/local_w7/ loco_mjx/experiments/runs/local_w7/`),
+  run per-robot cross-evals (super20 h1/h20 + held-out) with legs/arms split and the zero-action floor.

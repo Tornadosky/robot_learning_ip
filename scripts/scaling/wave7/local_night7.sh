@@ -63,5 +63,5 @@ run_with_fallback() {  # <name> <env...>
 }
 run_with_fallback w7_cot5 $COTV COTRAIN_INIT="$TOK"
 R5=$(cat "$C5/ROBOTS")
-run_with_fallback w7_ref5 LATENT=0
+run_with_fallback w7_cot5_s2 $COTV COTRAIN_INIT="$TOK" SEED=2   # BOX-B trains w7_ref5 (boxb_night7.sh); second co-trained seed here
 log "=== NIGHT7 DONE ==="

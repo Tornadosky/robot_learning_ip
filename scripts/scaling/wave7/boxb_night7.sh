@@ -57,4 +57,5 @@ run_with_fallback() {  # <name> <env...>
 run_with_fallback w7_ref5 LATENT=0
 run_with_fallback w7_cot5_h20 HOLD=20 $COTV COTRAIN_INIT="$TOK"
 run_with_fallback w7_ref5_h20 HOLD=20 LATENT=0
+run_with_fallback w7_ref5_s2 LATENT=0 SEED=2
 log "=== BOXB NIGHT7 DONE ==="
