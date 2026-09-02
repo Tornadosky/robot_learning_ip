@@ -23,7 +23,7 @@ if [ "${WAIT:-1}" = 1 ]; then
   for i in $(seq 1 1440); do
     t=$(grep -c "TOKENIZER PIPELINE DONE" $L/tokenizer_m20.log 2>/dev/null)
     a=$(grep -c "^OK Apollo\|^!! Apollo" $L/reissue_aa_all.log 2>/dev/null)
-    alive=$(powershell.exe -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -like '*reissue_clips*' }).Count" 2>/dev/null | tr -dc '0-9')
+    alive=$(powershell.exe -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { \$_.Name -like 'python*' -and \$_.CommandLine -like '*reissue_clips*' }).Count" 2>/dev/null | tr -dc '0-9')
     [ "${t:-0}" -ge 1 ] && [ "${a:-0}" -ge 1 ] && [ "${alive:-1}" = "0" ] && break; sleep 60
   done
 fi
