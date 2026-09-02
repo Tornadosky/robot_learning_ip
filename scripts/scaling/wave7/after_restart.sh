@@ -22,6 +22,12 @@ elif [ "$(grep -c '^OK\|^!!' $L/reissue_aa_all.log 2>/dev/null)" -lt 68 ]; then
   powershell.exe -NoProfile -Command "Start-Process -FilePath 'C:\Users\smirn\Desktop\robot_learning_ip\.venv\Scripts\python.exe' -ArgumentList 'experiments/fsq_khaendler/reissue_clips.py','--src-dir','external_data/amass_converted/LAFAN1_all','--out-root','external_data/amass_converted/LAFAN1_allfix','--targets','Atlas','Apollo','--clips','$ARGS' -WorkingDirectory 'C:\Users\smirn\Desktop\robot_learning_ip' -RedirectStandardOutput 'C:\Users\smirn\Desktop\robot_learning_ip\experiments\fsq_khaendler\_tok_logs\reissue_aa_all.log' -RedirectStandardError 'C:\Users\smirn\Desktop\robot_learning_ip\experiments\fsq_khaendler\_tok_logs\reissue_aa_all.err' -WindowStyle Hidden"
   echo "launched Atlas+Apollo re-issue (resume)"
 fi
+# 1b. DanceDB -> H1 batch retarget (77 dances, resumable, ~50 s each; run it AFTER
+#     the re-issue and tokenizer are done -- it competes for the GPU)
+if [ "$(grep -c ': OK' $L/dancedb_all.log 2>/dev/null)" -lt 70 ]; then
+  powershell.exe -NoProfile -Command "Start-Process -FilePath 'C:\Users\smirn\Desktop\robot_learning_ip\.venv\Scripts\python.exe' -ArgumentList 'scripts/scaling/wave7/retarget_dancedb.py' -WorkingDirectory 'C:\Users\smirn\Desktop\robot_learning_ip' -RedirectStandardOutput 'C:\Users\smirn\Desktop\robot_learning_ip\experiments\fsq_khaendler\_tok_logs\dancedb_all.log' -RedirectStandardError 'C:\Users\smirn\Desktop\robot_learning_ip\experiments\fsq_khaendler\_tok_logs\dancedb_all.err' -WindowStyle Hidden"
+  echo "launched DanceDB retarget (resume)"
+fi
 # 2. clip assembly waiter
 [ -f experiments/fsq_khaendler/clips_5r/READY ] || powershell.exe -NoProfile -Command "Start-Process wsl.exe -ArgumentList '-d','Ubuntu','-e','bash','/mnt/c/Users/smirn/Desktop/robot_learning_ip/scripts/scaling/wave7/launch_build_5r.sh' -WindowStyle Hidden"
 # 3. local overnight orchestrator (waits for READY, skips done arms)

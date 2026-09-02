@@ -23,7 +23,7 @@ scaling, transfer and DanceDB zero-shot are the secondary axes.
 | H1/G1 super20 + held-out clips + `_zq`/`_win` sidecars | `experiments/fsq_khaendler/clips_m20` | produced by the tokenizer script |
 | 5-robot set (adds T1/Atlas/Apollo super20 + held-out + sidecars) | `experiments/fsq_khaendler/clips_5r` (+ `ROBOTS`, `READY`) | auto after the re-issue (`build_clips_5r.sh`) |
 | handoff zip for BOX-B | `handoff_zips/w7_train_data.zip` (clips_m20, clips_5r, tokenizers, clips_3t_v2; ~3 GB) | auto after clips_5r |
-| DanceDB (77 dances, AMASS) → H1 → other robots | `external_data/amass_converted/DanceDB/<Robot>` | driver written (`scripts/scaling/wave7/retarget_dancedb.py`), 1-clip test running; batch = job D1 |
+| DanceDB (77 dances, AMASS) → H1 → other robots | `external_data/amass_converted/DanceDB/<Robot>` | driver verified (`scripts/scaling/wave7/retarget_dancedb.py`, 50 s per dance on the GPU); the batch is job D1, launched by `after_restart.sh` (it competes with the tokenizer/re-issue for the GPU, so it runs after them) |
 
 Robot screening (`scripts/scaling/wave7/screen_family.py`): Atlas residual 0.00016 (aliases for 4 ankle joints), Apollo 0.000 m positions (2 wrist-yaw joints absent in our model), GR1T2 parked (hip-frame mismatch), Talos/ToddlerBot out.
 
