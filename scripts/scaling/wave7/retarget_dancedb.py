@@ -19,6 +19,18 @@ AMASS = R / "external_data/amass/DanceDB"
 OUT = R / "external_data/amass_converted/DanceDB/UnitreeH1"
 
 
+def load_amass_npz(path):
+    """Same dict as loco_mujoco.smpl.retargeting.load_amass_data, from an explicit file."""
+    import numpy as np
+    e = dict(np.load(open(path, "rb"), allow_pickle=True))
+    fr = e.get("mocap_framerate", e.get("mocap_frame_rate"))
+    if fr is None:
+        raise ValueError("Framerate not found in the data file.")
+    trans = e["trans"]
+    pose_aa = np.concatenate([e["poses"][:, :66], np.zeros((trans.shape[0], 6))], axis=-1)
+    return {"pose_aa": pose_aa, "gender": e["gender"], "trans": trans, "betas": e["betas"], "fps": fr}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0)
@@ -32,8 +44,7 @@ def main():
     vars_path = R / "tmp" / "locomujoco_vars_native.yaml"
     vars_path.parent.mkdir(parents=True, exist_ok=True)
     ext = R / "external_data"
-    vars_path.write_text("".join(f"{k}: {v}
-" for k, v in {
+    vars_path.write_text("".join(f"{k}: {v}\n" for k, v in {
         "LOCOMUJOCO_AMASS_PATH": ext / "amass", "LOCOMUJOCO_CONVERTED_AMASS_PATH": ext / "amass_converted/AMASS",
         "LOCOMUJOCO_CONVERTED_DEFAULT_PATH": ext / "amass_converted/DEFAULT", "LOCOMUJOCO_CONVERTED_LAFAN1_PATH": ext / "amass_converted/LAFAN1",
         "LOCOMUJOCO_MODELS_PATH": R / "tmp/lm_models", "LOCOMUJOCO_SMPL_MODEL_PATH": ext / "smpl"}.items()))
@@ -61,7 +72,7 @@ def main():
                 print(f"{stem}: exists", flush=True); continue
             t = time.time()
             try:
-                motion = load_amass_data(str(Path("DanceDB") / subj / clip.stem))
+                motion = load_amass_npz(clip)  # loco-mujoco's registry lookup breaks on Windows paths; read the file directly
                 traj = fit_smpl_motion(a.env, conf, get_smpl_model_path(), motion, str(shape_path), logger, skip_steps=False)
                 traj = extend_motion(a.env, conf.env_params, traj)
                 traj.save(str(out))
