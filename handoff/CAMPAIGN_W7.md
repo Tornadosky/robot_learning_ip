@@ -17,12 +17,12 @@ scaling, transfer and DanceDB zero-shot are the secondary axes.
 | item | path | status |
 |---|---|---|
 | all 40 LAFAN1 motions, 5 robots, our clip format with foot sites | `external_data/amass_converted/LAFAN1_all/{UnitreeH1,UnitreeG1,BoosterT1,Atlas,Apollo}` (7.3 GB) | done |
-| feasibility re-issue (stiffened limits + FK sites) | `external_data/amass_converted/LAFAN1_allfix/{BoosterT1,Atlas,Apollo}` | T1 running (34 motions), Atlas+Apollo auto-start after it; resumable |
+| feasibility re-issue (stiffened limits + FK sites) | `external_data/amass_converted/LAFAN1_allfix/{BoosterT1,Atlas,Apollo}` | DONE 20:49: 34/34 for each of T1, Atlas, Apollo, 0 failures |
 | 20-motion split | `experiments/fsq_khaendler/clips_m20/{train,heldout}_motions.txt` | done (train: dance1 s1-2, dance2 s1-5, walk1 s1-2, walk2 s1, walk3 s1-2, walk4 s1, run1 s2, run2 s1, sprint1 s2, jumps1 s1-2, fight1 s2, fightAndSports1 s1; held out: dance1 s3, walk1 s5, walk3 s5, run2 s4, sprint1 s4, jumps1 s5, fight1 s5) |
-| tokenizer on 20 motions (H1+G1, held-out excluded from the codec) | `experiments/fsq_khaendler/tokenizer_m20` | done ~19:20; held-out reconstruction 0.035/0.056 rad at epoch 60 (v2 was 0.16/0.20) |
-| H1/G1 super20 + held-out clips + `_zq`/`_win` sidecars | `experiments/fsq_khaendler/clips_m20` | produced by the tokenizer script |
-| 5-robot set (adds T1/Atlas/Apollo super20 + held-out + sidecars) | `experiments/fsq_khaendler/clips_5r` (+ `ROBOTS`, `READY`) | auto after the re-issue (`build_clips_5r.sh`) |
-| handoff zip for BOX-B | `handoff_zips/w7_train_data.zip` (clips_m20, clips_5r, tokenizers, clips_3t_v2; ~3 GB) | auto after clips_5r |
+| tokenizer on 20 motions (H1+G1, held-out excluded from the codec) | `experiments/fsq_khaendler/tokenizer_m20` | DONE 19:20; joint-angle reconstruction 0.129 rad in-corpus, 0.11–0.14 rad on the 7 unseen motions (v2: 0.15/0.16); the training-log 'eval' is velocity-dominated, ignore it |
+| H1/G1 super20 + held-out clips + `_zq`/`_win` sidecars | `experiments/fsq_khaendler/clips_m20` | DONE 19:20 (8 clips × `_zq` + `_win` per robot) |
+| 5-robot set (adds T1/Atlas/Apollo super20 + held-out + sidecars) | `experiments/fsq_khaendler/clips_5r` (+ `ROBOTS`, `READY`) | DONE 20:56: all 5 robots, sidecars verified 8/8 per robot |
+| handoff zip for BOX-B | `handoff_zips/w7_train_data.zip` (clips_m20, clips_5r, tokenizers, clips_3t_v2) | DONE 21:08, 14.7 GB (window sidecars are float32 on disk) — prefer rsync over LAN (§3) |
 | DanceDB (77 dances, AMASS) → H1 → other robots | `external_data/amass_converted/DanceDB/<Robot>` | driver verified (`scripts/scaling/wave7/retarget_dancedb.py`, 50 s per dance on the GPU); the batch is job D1, launched by `after_restart.sh` (it competes with the tokenizer/re-issue for the GPU, so it runs after them) |
 
 Robot screening (`scripts/scaling/wave7/screen_family.py`): Atlas residual 0.00016 (aliases for 4 ankle joints), Apollo 0.000 m positions (2 wrist-yaw joints absent in our model), GR1T2 parked (hip-frame mismatch), Talos/ToddlerBot out.
@@ -31,13 +31,13 @@ Robot screening (`scripts/scaling/wave7/screen_family.py`): Atlas residual 0.000
 
 | id | machine | job | status / trigger |
 |---|---|---|---|
-| J1 | BOX-A | tokenizer_m20 + sidecars for clips_m20 | running → done ~19:20 |
-| J2 | BOX-A → VIPER | upload clips_m20 + tokenizer; submit wave 7a (`submit_w7a.sh`) | auto after J1 (`viper_after_tokenizer.sh`) |
-| J3 | BOX-A | 3-robot co-training SMOKE (never run with 3 robots) | auto after J1 (`local_night7.sh`) |
-| J4 | BOX-A (Windows venv) | T1 → Atlas → Apollo feasibility re-issue, 34 motions each | running; Atlas+Apollo auto-chained; **resume after reboot with `after_restart.sh`** |
-| J5 | BOX-A | assemble clips_5r + sidecars + handoff zip | auto after J4 (+J1) |
-| J6 | BOX-A | 5-robot co-trained arm, 59M steps, bodies 0.2→0.7 (fallback 4→3 robots on OOM) | auto after J5 (`local_night7.sh`), overnight |
-| J7 | BOX-B | 5-robot reference arm, 59M, same recipe | manual, once BOX-B has the zip (command in §3) |
+| J1 | BOX-A | tokenizer_m20 + sidecars for clips_m20 | DONE 19:20 |
+| J2 | BOX-A → VIPER | upload clips_m20 + tokenizer; submit wave 7a (`submit_w7a.sh`) | DONE 19:34 (276 jobs; 32 running, 0 failures at 21:00) |
+| J3 | BOX-A | 3-robot co-training SMOKE (never run with 3 robots) | PASSED 19:40 (10 updates, recon loss 0.033→0.026) |
+| J4 | BOX-A (Windows venv) | T1 → Atlas → Apollo feasibility re-issue, 34 motions each | DONE 20:49 |
+| J5 | BOX-A | assemble clips_5r + sidecars + handoff zip | DONE 21:08 |
+| J6 | BOX-A | 5-robot co-trained arm, 59M steps, bodies 0.2→0.7 (fallback 4→3 robots on OOM) | starts with `after_restart.sh` after the reboot (never run yet: watch `experiments/local_w7/w7_cot5.log` for the compile and the robot fallback) |
+| J7 | BOX-B | 5-robot reference arm, 59M, same recipe | manual, after rsync to BOX-B (§3) |
 | J8 | VIPER | wave 7a: 23 trains + 253 cross-evals (see §2) | after J2, ~overnight (each train 35 min–2.3 h, ~30 concurrent) |
 | D1 | BOX-A (after reboot) or BOX-B | DanceDB batch retarget → H1 (77 clips, torch CUDA), then re-issue to G1/T1/Atlas/Apollo | manual: `retarget_dancedb.py` then `reissue_clips.py --src-dir external_data/amass_converted/DanceDB --targets UnitreeG1 BoosterT1 Atlas Apollo` |
 | D2 | any | DanceDB zero-shot cross-evals on 8–10 dances for every 7a arm | after D1 (sidecars via `emit_sidecars_any.py`) |
