@@ -20,14 +20,24 @@ os.environ.setdefault("MUJOCO_GL", "disable")
 
 import argparse
 import json
-import shutil
+import zipfile
 import tempfile
 import time
 from pathlib import Path
 
 import numpy as np
 
-ROBOT_TO_CLIP_SUBDIR = {"unitree_h1": "UnitreeH1", "unitree_g1": "UnitreeG1"}
+# This is a SECOND copy of the map that lives in urma2/mjx/default_config.py as
+# tracking_clip_robot_map. Adding a family means editing both, and forgetting
+# this one costs a full rollout: the env builds happily and the scorer then dies
+# on KeyError after the 3-robot graph has already compiled for ten minutes.
+ROBOT_TO_CLIP_SUBDIR = {
+    "unitree_h1": "UnitreeH1", "h1": "UnitreeH1",
+    "unitree_g1": "UnitreeG1", "g1": "UnitreeG1",
+    "booster_t1": "BoosterT1", "t1": "BoosterT1",
+    "atlas": "Atlas", "talos": "Talos", "toddlerbot": "ToddlerBot",
+    "unitree_h1v2": "UnitreeH1v2", "h1v2": "UnitreeH1v2",
+}
 
 
 class _DummyWriter:
@@ -39,16 +49,27 @@ class _DummyWriter:
 
 
 def make_eval_checkpoint(model_path: str, work_dir: str) -> str:
-    # Strip resume-only files so URMA2.load() treats this as a plain test load
-    # (same trick as eval_heldout.py).
+    """Copy only the selected model and remove resume-only archive members.
+
+    Intermediate checkpoints can share the source directory with ``latest.model``.
+    Copying the whole directory makes each evaluation duplicate every checkpoint,
+    while filtering sibling files cannot remove resume metadata stored *inside*
+    the model ZIP.  Rewriting one archive gives URMA2.load() a plain evaluation
+    checkpoint and bounds temporary disk use to one model.
+    """
     src = Path(model_path)
+    if not src.is_file():
+        raise FileNotFoundError(src)
     dst = Path(work_dir) / "model"
     dst.mkdir(parents=True, exist_ok=True)
-    for f in src.parent.iterdir():
-        if f.name in ("training_progress.json", "resume_manifest.json", "resume_state.npz"):
-            continue
-        shutil.copy2(f, dst / f.name)
-    return str(dst / src.name)
+    target = dst / src.name
+    resume_members = {"training_progress.json", "resume_manifest.json", "resume_state.npz"}
+    with zipfile.ZipFile(src, "r") as source, zipfile.ZipFile(target, "w") as output:
+        for info in source.infolist():
+            if Path(info.filename).name in resume_members:
+                continue
+            output.writestr(info, source.read(info.filename))
+    return str(target)
 
 
 def load_raw_joints(raw_clip_dir: str, robot: str, clip: str, mj_model):
@@ -60,8 +81,16 @@ def load_raw_joints(raw_clip_dir: str, robot: str, clip: str, mj_model):
     """
     import mujoco
 
+    # THIRD copy of the sign lookup (env: clip_reference.load_clip; robot->subdir
+    # map above; here). T1_CLIP_SIGNS was missing until 2026-08-27, so every
+    # booster_t1 joint scored at +1.0 while 14 of its 23 are flipped: the first
+    # 3-topology crosseval reported t1 at 0.888 rad with ref-vs-raw 0.964, i.e.
+    # the "reference" was a rad off the clip it was being compared to. That is
+    # the convention mismatch this function's own comment warns about, not a
+    # policy failure. The three name spaces are disjoint (verified), so the
+    # chained lookup below is safe.
     from loco_mjx.environments.locomotion.urma2.mjx.clip_reference import (
-        H1_CLIP_SIGNS, G1_CLIP_SIGNS,
+        H1_CLIP_SIGNS, G1_CLIP_SIGNS, T1_CLIP_SIGNS,
     )
 
     d = np.load(Path(raw_clip_dir) / ROBOT_TO_CLIP_SUBDIR[robot] / clip, allow_pickle=True)
@@ -73,7 +102,8 @@ def load_raw_joints(raw_clip_dir: str, robot: str, clip: str, mj_model):
             act_ids.append(a)
             cols.append(joint_names.index(name))
             names.append(name)
-            signs.append(H1_CLIP_SIGNS.get(name, G1_CLIP_SIGNS.get(name, 1.0)))
+            signs.append(H1_CLIP_SIGNS.get(
+                name, G1_CLIP_SIGNS.get(name, T1_CLIP_SIGNS.get(name, 1.0))))
     raw = np.asarray(d["qpos"], dtype=np.float64)[:, 7:][:, np.array(cols, dtype=np.int64)]
     # Same per-joint sign correction the env applies when loading a clip
     # (clip_reference.load_clip); without it, flipped joints score ~1.5 rad of
@@ -83,6 +113,44 @@ def load_raw_joints(raw_clip_dir: str, robot: str, clip: str, mj_model):
     raw = raw * np.array(signs, dtype=np.float64)[None, :]
     return raw, np.array(act_ids, dtype=np.int64), names
 
+
+
+_AGE_BINS = (0, 5, 10, 20, 40, 80, 160, 320, 640, 10 ** 9)
+
+
+def _age_binned(d, diff):
+    """Tracking RMSE conditioned on WITHIN-EPISODE step index.
+
+    The env auto-resets, so a crosseval's `steps` frames are many stitched
+    episodes and every sample is bounded by how long the policy survives. An arm
+    that survives longer is therefore sampled from further into the drift, and a
+    plain per-frame RMSE comparison between two arms silently mixes "tracks
+    better" with "died sooner". This is the same failure family as the
+    per-episode-mean heading confound (F10), one level deeper: a FIXED horizon
+    does not remove it.
+
+    Compare arms bin-for-bin. Wrapped like _heading_stats: instrumentation must
+    never be what breaks a crosseval.
+    """
+    try:
+        import numpy as _np
+        chunks = [c for c in d.get("age_samples", []) if len(c)]
+        if not chunks:
+            return {"age_binned_rmse_rad": None}
+        age = _np.concatenate(chunks, axis=0)
+        n = min(age.shape[0], diff.shape[0])
+        age, dd = age[:n], diff[:n]
+        out = {}
+        for lo, hi in zip(_AGE_BINS[:-1], _AGE_BINS[1:]):
+            m = (age >= lo) & (age < hi)
+            k = f"{lo}-{hi - 1}" if hi < 10 ** 9 else f"{lo}+"
+            out[k] = ({"n": int(m.sum()),
+                       "rmse_rad": float(_np.sqrt(_np.mean(dd[m] ** 2)))}
+                      if m.any() else {"n": 0, "rmse_rad": None})
+        return {"age_binned_rmse_rad": out,
+                "age_mean": float(age.mean()), "age_p95": float(_np.percentile(age, 95))}
+    except Exception:  # noqa: BLE001
+        return {"age_binned_rmse_rad": None}
 
 
 def _heading_stats(d):
@@ -107,7 +175,7 @@ def _heading_stats(d):
         return {"heading_error_deg_mean": None, "heading_error_deg_p95": None}
 
 
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
     p.add_argument("--model_path", required=True)
     p.add_argument("--clip_dir", required=True, help="the ARM's clip dir (training condition)")
@@ -146,6 +214,8 @@ def main() -> None:
     # observation layout exactly.
     p.add_argument("--refvel_obs", default="False", choices=("True", "False"),
                    help="tracking_clip_observe_velocity, as trained")
+    p.add_argument("--root_heading_obs", default="False", choices=("True", "False"),
+                   help="tracking_clip_observe_root_heading, as trained; must match checkpoint width")
     p.add_argument("--robots", default="unitree_h1:unitree_g1",
                    help="colon-separated robot set, EXACTLY as the arm trained")
     p.add_argument("--latent_hold", type=int, default=1,
@@ -155,15 +225,31 @@ def main() -> None:
                         "means the arm saw BOTH the reference and the token, which is "
                         "a WIDER joint observation -- hardcoding True (as this script "
                         "did until 26-08) makes such a checkpoint unloadable.")
+    p.add_argument("--jlat_enc_dim", type=int, default=4,
+                   help="algorithm.joint_latent_encoder_dim, as trained. The "
+                        "separate-encoder arms changed the NETWORK, so an eval "
+                        "that leaves this at the default rebuilds the wrong "
+                        "policy and still returns a number.")
+    p.add_argument("--latent_scope", default="per_joint",
+                   choices=("per_joint", "global", "both"),
+                   help="tracking_clip_latent_scope, as trained. Changes the "
+                        "observation LAYOUT, so a mismatch loads a checkpoint "
+                        "against the wrong channels.")
+    p.add_argument("--latent_divisor", type=float, default=1.0,
+                   help="tracking_clip_latent_obs_divisor, as trained.")
     p.add_argument("--latent_dim", type=int, default=32,
                    help="tracking_clip_latent_dim, as trained. Kevin's per-joint "
                         "tokenizer is 32; the CANONICAL shared-stream tokenizer is "
                         "4 (codebook 8x5x5x5, one code per frame). A mismatch "
                         "changes the observation width and the checkpoint will "
                         "not load.")
+    p.add_argument("--latent_sidecar", default="_zq",
+                   help="tracking_clip_latent_sidecar_suffix, as trained (_win for co-training arms)")
     p.add_argument("--reference_hold", type=int, default=1,
                    help="freeze the OBSERVED reference to every K-th clip frame; "
                         "the reward target stays fresh (K=1 disables)")
+    p.add_argument("--contact_timeconst", type=float, default=0.0,
+                   help="terrain.contact_solref_timeconst; must match the training arm")
     p.add_argument("--dump_render", default=None,
                    help="write <path>__<robot>.npz with the fields rf_render_dance.py "
                         "reads (qpos, reference_joint_targets, reference_root_yaw_delta, "
@@ -178,13 +264,77 @@ def main() -> None:
                         "earlier zero-shot result died to its absence.")
     p.add_argument("--latent", action="store_true",
                    help="checkpoint was trained with z-token obs replacing the reference channel")
+    p.add_argument("--morphology_coeff", type=float, default=0.0,
+                   help="reset-time seen-body morphology magnitude; 0 evaluates nominal bodies")
+    p.add_argument("--torque_scaling_exponent", type=float, default=1.0,
+                   help="seen-body actuator torque scaling exponent used by the checkpoint recipe")
+    p.add_argument("--exact_inertia_rescale", default="False", choices=("True", "False"),
+                   help="use exact inertia re-diagonalization for randomized evaluation bodies")
+    p.add_argument("--body_pool_size", type=int, default=0,
+                   help="optional deterministic finite randomized-body pool; 0 samples continuously")
     p.add_argument("--out", required=True)
-    args = p.parse_args()
+    return p
+
+
+def _as_bool(value: str) -> bool:
+    return value == "True"
+
+
+def apply_evaluation_settings(config, args) -> None:
+    """Reproduce observation width and configure nominal/reset-only morphology eval."""
+    if not 0.0 <= args.morphology_coeff <= 1.0:
+        raise ValueError("morphology_coeff must be in [0, 1]")
+    if args.torque_scaling_exponent <= 0.0:
+        raise ValueError("torque_scaling_exponent must be positive")
+    if args.body_pool_size < 0:
+        raise ValueError("body_pool_size must be >= 0")
+    config.environment.command.tracking_clip_observe_root_heading = _as_bool(
+        args.root_heading_obs)
+    dr = config.environment.domain_randomization
+    seen = dr.seen_robot
+    seen.morphology_coeff_mode = "fixed"
+    seen.morphology_coeff_value = float(args.morphology_coeff)
+    seen.torque_scaling_exponent = float(args.torque_scaling_exponent)
+    seen.exact_inertia_rescale = _as_bool(args.exact_inertia_rescale)
+    seen.body_pool_size = int(args.body_pool_size)
+    if args.morphology_coeff > 0.0:
+        # Probability zero means no mid-episode mutation; the "and_reset"
+        # component still samples a body at each reset.
+        dr.sampling_type = "step_probability_and_reset"
+        dr.sampling_probability = 0.0
+    else:
+        dr.sampling_type = "none"
+
+
+def make_eval_condition(args, robots) -> dict:
+    return {
+        "clip": args.clip, "raw_clip_dir": args.raw_clip_dir,
+        "robots": list(robots), "refbias": args.refbias,
+        "anchor": args.anchor, "fitvariant": args.fitvariant,
+        "refroot": args.refroot, "refroot_floor": args.refroot_floor,
+        "refvel_obs": args.refvel_obs, "root_heading_obs": args.root_heading_obs,
+        "latent": bool(args.latent), "latent_hold": args.latent_hold,
+        "latent_dim": args.latent_dim, "zero_action": bool(args.zero_action),
+        "latent_scope": args.latent_scope, "latent_divisor": float(args.latent_divisor),
+        "jlat_enc_dim": int(args.jlat_enc_dim),
+        "latent_replaces": args.latent_replaces,
+        "latent_sidecar": str(args.latent_sidecar),
+        "reference_hold": args.reference_hold,
+        "morphology_coeff": float(args.morphology_coeff),
+        "torque_scaling_exponent": float(args.torque_scaling_exponent),
+        "exact_inertia_rescale": args.exact_inertia_rescale,
+        "body_pool_size": int(args.body_pool_size),
+    }
+
+
+def main() -> None:
+    args = build_arg_parser().parse_args()
 
     import importlib
 
     import jax
     import mujoco
+    from os import stat as _os_stat
     from ml_collections import config_dict
     from rl_x.algorithms.algorithm_manager import get_algorithm_config, get_algorithm_model_class
     from rl_x.environments.environment_manager import get_environment_config
@@ -216,6 +366,7 @@ def main() -> None:
 
     config.algorithm.name = algorithm_name
     config.algorithm.evaluation_active = False
+    config.algorithm.joint_latent_encoder_dim = int(args.jlat_enc_dim)
 
     # The checkpoint's manifest pins the exact robot set; evaluate exactly that
     # set and split the metrics per robot afterwards.
@@ -230,6 +381,7 @@ def main() -> None:
 
     # Must match the training run or the checkpoint's obs sizes won't line up.
     config.environment.terrain.type = "plane"
+    config.environment.terrain.contact_solref_timeconst = args.contact_timeconst
     config.environment.critic_exteroceptive_observation_type = "none"
     config.environment.command.type = "tracking_clip"
     config.environment.reward.type = "tracking"
@@ -255,9 +407,11 @@ def main() -> None:
         config.environment.command.tracking_clip_latent_replaces_reference = (
             args.latent_replaces == "True")
         config.environment.command.tracking_clip_latent_hold = args.latent_hold
+        config.environment.command.tracking_clip_latent_scope = args.latent_scope
+        config.environment.command.tracking_clip_latent_obs_divisor = float(args.latent_divisor)
+        config.environment.command.tracking_clip_latent_sidecar_suffix = str(args.latent_sidecar)
     config.environment.domain_randomization.initial_state.type = "reference"
-    # Nominal body, no randomization: motion quality only.
-    config.environment.domain_randomization.sampling_type = "none"
+    apply_evaluation_settings(config, args)
     config.environment.domain_randomization.perturbation.sampling_type = "none"
     config.environment.domain_randomization.observation_noise.type = "none"
 
@@ -290,6 +444,17 @@ def main() -> None:
             "exec_samples": [], "ref_samples": [], "raw_samples": [],
             "heading_err": [],
             "alive": 0, "total": 0,
+            # 2026-08-28 (F16/F17): the env AUTO-RESETS, so these `steps` frames
+            # are many stitched episodes, not one trajectory -- and no sample is
+            # ever drawn from deeper into an episode than the policy survives.
+            # An arm that survives longer therefore samples from further into the
+            # drift, which biases any per-frame RMSE comparison between arms.
+            # `age` is the within-episode step index of each env, so the error
+            # can be conditioned on it. `n_term` counts resets, which is the
+            # honest survival number: alive_fraction is ~1.0 by construction
+            # because only the single terminal frame is masked, and must NEVER be
+            # quoted as survival.
+            "age": None, "age_samples": [], "n_term": 0,
             # FEETFIX: the physical foot channels, accumulated over the SAME
             # alive mask as the tracking samples. Read straight out of the env's
             # own info dict, so the number here is computed by the identical
@@ -381,6 +546,14 @@ def main() -> None:
                 pass
             d["alive"] += int(ok.sum())
             d["total"] += int(ok.shape[0])
+            # Age is recorded for the SAME rows the samples above were taken
+            # from, then advanced; terminated envs restart at 0 because the env
+            # has already auto-reset them.
+            if d["age"] is None:
+                d["age"] = np.zeros(ok.shape[0], dtype=np.int64)
+            d["age_samples"].append(d["age"][ok].copy())
+            d["n_term"] += int(terminated_all[i].sum())
+            d["age"] = np.where(terminated_all[i], 0, d["age"] + 1)
             n_ok = int(ok.sum())
             if n_ok:
                 for k, v in state.info.items():
@@ -392,21 +565,26 @@ def main() -> None:
                     d["foot"][k] = d["foot"].get(k, 0.0) + float(vals[ok].sum())
                 d["foot_n"] += n_ok
 
-    result = {"model_path": args.model_path, "clip_dir": args.clip_dir,
+    # A crosseval submitted while its arm is still TRAINING silently scores a
+    # partially-trained policy, because the launcher resolves latest.model at
+    # JOB START and that path is MUTABLE. It leaves no error and model_path is
+    # byte-identical between a contaminated run and a clean one, so the artifact
+    # gives no signal at all -- the only tell was comparing sacct timestamps.
+    # Recording the resolved file's mtime and size turns that silent failure
+    # into a visible one: two runs of "the same" checkpoint that disagree here
+    # did not evaluate the same weights.
+    try:
+        _st = _os_stat(args.model_path)
+        _mtime, _size = float(_st.st_mtime), int(_st.st_size)
+    except Exception:  # noqa: BLE001
+        _mtime, _size = None, None
+    result = {"model_path": args.model_path,
+              "model_mtime": _mtime, "model_size_bytes": _size,
+              "clip_dir": args.clip_dir,
               # The 24-08 FSQ control was destroyed by two evaluations of one
               # checkpoint writing the same ${EXP}.json. Stamping the condition
               # INTO the artifact means a collision is at least detectable.
-              "eval_condition": {
-                  "clip": args.clip, "raw_clip_dir": args.raw_clip_dir,
-                  "robots": list(robots), "refbias": args.refbias,
-                  "anchor": args.anchor, "fitvariant": args.fitvariant,
-                  "refroot": args.refroot, "refroot_floor": args.refroot_floor,
-                  "refvel_obs": args.refvel_obs,
-                  "latent": bool(args.latent), "latent_hold": args.latent_hold,
-                  "latent_dim": args.latent_dim, "zero_action": bool(args.zero_action),
-                  "latent_replaces": args.latent_replaces,
-                  "reference_hold": args.reference_hold,
-              },
+              "eval_condition": make_eval_condition(args, robots),
               "nr_envs": model.nr_envs, "steps": args.steps,
               "wall_time_s": round(time.time() - started, 1), "robots": {}}
     for d in per:
@@ -422,12 +600,32 @@ def main() -> None:
         diff = ex - rw
         ref_diff = rf - rw
         rmse = float(np.sqrt(np.mean(diff**2)))
+        # F20 (2026-08-28): the shape metric above centres its two sides by
+        # DIFFERENT constants -- rw by the FULL-CLIP mean, ex and rf by their own
+        # SAMPLE means. A perfect tracker (ex_abs == rw_abs) therefore leaves a
+        # residual of clip_mean - mean(rw_abs): the gap between the whole clip and
+        # the phases actually VISITED. Measured by resampling the real clip at the
+        # observed episode lengths, that manufactures 0.0206 rad on H1 and 0.0125
+        # on G1, and it falls to exactly 0 when episodes cover the clip. It is why
+        # shape exceeds absolute on both robots, which consistent centring makes
+        # impossible.
+        #
+        # ADDITIVE by decision: every historical table is built on the keys above,
+        # so they are left exactly as they are and the consistently-centred
+        # versions are emitted alongside. Both on one artifact is the only way to
+        # learn how much the defect actually moved anything.
+        rw_self = rw_abs - rw_abs.mean(0, keepdims=True)
+        diff_self = ex - rw_self
+        ref_diff_self = rf - rw_self
         # Absolute metric (anchor-fix era): no centering anywhere. A centered-
         # anchor arm keeps its constant rest-pose bias here, which is the point.
         diff_abs = ex_abs - rw_abs
         result["robots"][d["robot"]] = {
             "raw_rmse_rad": rmse,
             "raw_rmse_rad_absolute": float(np.sqrt(np.mean(diff_abs**2))),
+            # F20: all three sides centred by their own sample mean. Compare
+            # against raw_rmse_rad to see how much the centring mismatch moved.
+            "raw_rmse_rad_selfcentred": float(np.sqrt(np.mean(diff_self**2))),
             "per_joint_rmse_rad": {
                 name: float(np.sqrt(np.mean(diff[:, k] ** 2)))
                 for k, name in enumerate(d["names"])
@@ -443,10 +641,78 @@ def main() -> None:
                 name: float(np.sqrt(np.mean(diff_abs[:, k] ** 2)))
                 for k, name in enumerate(d["names"])
             },
+            # F20: per-joint, consistently centred. The manufactured term is a
+            # CONSTANT in radians, so as a fraction of a joint's own signal it
+            # lands hardest on LOW-amplitude chains -- 21.7% of trunk's reference
+            # std against 3.8% of the arms' on H1. That is exactly where F15's
+            # amplitude-normalised conclusions live, so the chain analysis has to
+            # be re-read on this key rather than on the centred one.
+            "per_joint_rmse_rad_selfcentred": {
+                name: float(np.sqrt(np.mean(diff_self[:, k] ** 2)))
+                for k, name in enumerate(d["names"])
+            },
             "samples": int(ex.shape[0]),
+            # SIGNED per-joint bias, executed minus reference. The implied bias
+            # sqrt(absolute^2 - centred^2) recovers only a MAGNITUDE, which left
+            # the direction of the 29-degree H1 ankle offset (F17) unresolvable
+            # from the JSON. This is the signed quantity, one line, and it says
+            # which way the joint is displaced.
+            "per_joint_bias_rad": {
+                name: float(np.mean(diff_abs[:, k]))
+                for k, name in enumerate(d["names"])
+            },
+            # Pearson correlation, executed vs raw clip, PER JOINT. RMSE cannot
+            # tell "actively moving the wrong way" from "not moving with the
+            # reference at all", and on 2026-08-28 the hips scored WORSE than
+            # zero action in both metric variants -- which a sign flip and a
+            # learning failure both predict. This separates them:
+            #   corr ~ -1 : anti-tracked. A sign/axis defect (this repo has had
+            #               13/19 H1 axes reversed once) or an inverted target.
+            #   corr ~  0 : not tracked. The reference carries no influence.
+            #   corr >  0 : tracked, badly. RMSE is then amplitude or phase.
+            # Zero marginal cost: the arrays are already in hand.
+            "per_joint_corr": {
+                name: (
+                    float(
+                        np.corrcoef(ex_abs[:, k], rw_abs[:, k])[0, 1]
+                    )
+                    if float(np.std(ex_abs[:, k])) > 1e-9
+                    and float(np.std(rw_abs[:, k])) > 1e-9
+                    else None
+                )
+                for k, name in enumerate(d["names"])
+            },
+            # The PIPELINE's own per-joint discrepancy: the env's internal
+            # reference against the raw clip, with nothing to do with the policy.
+            # Aggregate `reference_vs_raw_rmse_rad` is 0.0283 rad absolute on H1
+            # but only 0.0050 on G1 (2026-08-28), so it is neither negligible nor
+            # uniform across robots -- and because per_joint_rmse_rad scores
+            # executed-vs-RAW, whatever sits here is inside every per-joint number
+            # we quote. Emitting it per joint is what lets the 29-degree H1 ankle
+            # offset (F17) be split into "the policy stands differently" and "the
+            # reference the policy was given already differed from the clip".
+            "per_joint_ref_vs_raw_rmse_rad": {
+                name: float(np.sqrt(np.mean(ref_diff[:, k] ** 2)))
+                for k, name in enumerate(d["names"])
+            },
+            "per_joint_ref_bias_rad": {
+                name: float(np.mean((rf_abs - rw_abs)[:, k]))
+                for k, name in enumerate(d["names"])
+            },
+            # Survival, honestly. alive_fraction below is ~1.0 BY CONSTRUCTION
+            # (only the terminal frame is masked) and is not a survival number.
+            "n_terminations": int(d["n_term"]),
+            "mean_episode_length_steps": (
+                float(d["total"]) / max(1, d["n_term"])),
+            **_age_binned(d, diff),
             "alive_fraction": d["alive"] / max(1, d["total"]),
             **_heading_stats(d),
             "reference_vs_raw_rmse_rad": float(np.sqrt(np.mean(ref_diff**2))),
+            # F20: the FLOOR is where the centring mismatch bit hardest -- ~40% of
+            # H1's reported shape floor and ~58% of G1's was manufactured. Use
+            # this one, or the absolute variant, whenever quoting a floor.
+            "reference_vs_raw_rmse_rad_selfcentred": float(
+                np.sqrt(np.mean(ref_diff_self**2))),
             "reference_vs_raw_rmse_rad_absolute": float(np.sqrt(np.mean((rf_abs - rw_abs) ** 2))),
             "foot_metrics": {
                 k.split("/")[1]: v / max(1, d["foot_n"]) for k, v in sorted(d["foot"].items())

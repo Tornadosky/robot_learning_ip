@@ -1,0 +1,18 @@
+{
+  "plots": [
+    "joint_rmse.png",
+    "qvel_rmse.png",
+    "root_heading_error_deg.png",
+    "body_rpos_error.png",
+    "body_rquat_error.png",
+    "foot_height_error.png",
+    "foot_penetration.png",
+    "foot_slip.png",
+    "morphology_coeff.png",
+    "episode_return.png",
+    "episode_length.png",
+    "ppo_health.png",
+    "optimization_health.png"
+  ],
+  "rows": 16
+}

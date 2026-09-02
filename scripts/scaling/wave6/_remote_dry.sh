@@ -1,0 +1,1 @@
+cd /ptmp/akalenik/urma && sed -i 's/\r$//' submit_w6a.sh && DRY=1 bash submit_w6a.sh > /tmp/w6a_dry.txt 2>&1; echo "trains=$(grep -c '^TRAIN' /tmp/w6a_dry.txt) ces=$(grep -c '^  CE' /tmp/w6a_dry.txt)"; grep '^TRAIN' /tmp/w6a_dry.txt; grep -A1 'TRAIN n6m7_tok_s1' /tmp/w6a_dry.txt | tail -1; grep 'ABORT\|error\|Error' /tmp/w6a_dry.txt; tail -2 /tmp/w6a_dry.txt

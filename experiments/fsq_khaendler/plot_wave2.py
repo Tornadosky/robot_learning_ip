@@ -392,11 +392,51 @@ def fig_selloff():
     plt.close(fig)
 
 
+# ---------------------------------------------------------------- figure 12
+def fig_3t():
+    """One policy, three topologies, one motion -- the first working run."""
+    df = pd.read_csv(HERE / "curves_3t.csv")
+    x = df["steps"].to_numpy() / 1e6
+    robots = [("h1", BLUE, "H1  (19 joints)"),
+              ("g1", AMBER, "G1  (23 joints)"),
+              ("t1", PLUM, "booster T1  (23 joints)")]
+    fig, axes = plt.subplots(1, 3, figsize=(13.2, 3.9))
+    for r, c, lab in robots:
+        axes[0].plot(x, smooth(df[f"eplen_{r}"].to_numpy(), 21), color=c, lw=1.9, label=lab)
+        axes[1].plot(x, smooth(df[f"joint_{r}"].to_numpy(), 21), color=c, lw=1.9)
+        ratio = df[f"air_{r}"].to_numpy() / np.maximum(df[f"refair_{r}"].to_numpy(), 1e-9)
+        axes[2].plot(x, smooth(ratio, 31), color=c, lw=1.9)
+    axes[0].axhline(1000, color=GREY, ls=":", lw=1.2)
+    axes[0].text(0.3, 940, "episode cap 1000", fontsize=8.4, color=GREY)
+    axes[0].set_ylabel("episode length (steps)"); axes[0].set_ylim(0, 1080)
+    axes[0].set_title("Survival"); axes[0].legend(loc="lower right", fontsize=8.6)
+    # t1 starts at 0.78 rad and only crosses 0.45 near 16M; clipping it would
+    # hide the fact that the third robot converges late, which is the point.
+    axes[1].set_ylabel("joint tracking error (rad)"); axes[1].set_ylim(0, 0.85)
+    axes[1].set_title("Tracking")
+    axes[2].axhline(1.0, color="#8A5A00", ls="--", lw=1.3)
+    axes[2].set_ylabel("foot-lift ratio  (policy / reference)"); axes[2].set_ylim(0, 2.6)
+    axes[2].set_title("Feet")
+    for ax in axes:
+        ax.set_xlabel("training steps (millions)"); ax.set_xlim(0, 19.2); tidy(ax)
+    fig.suptitle("One policy, three topologies, one motion — H1 + G1 + booster T1 on dance2_subject4",
+                 fontsize=11.5, fontweight="bold", y=1.05)
+    fig.text(0.005, -0.06,
+             "19.17M steps, 576 environments per robot, local CUDA (Viper's ROCm cannot compile three "
+             "robot graphs). Final episode length 878 of 1000; joint error 0.081 / 0.038 / 0.120 rad for "
+             "H1 / G1 / t1. G1 tracks best inside the shared policy, as it does in every two-topology run.",
+             fontsize=8.4, color="#4A5A62")
+    fig.savefig(OUT / "f12_three_topologies.png")
+    plt.close(fig)
+
+
+
 if __name__ == "__main__":
     df = load()
     print(f"loaded {len(df)} rows / {df.arm.nunique()} arms")
     fig_heading(df); fig_blind(df); fig_degrade(); fig_rate(); fig_msweep()
     fig_2x2(); fig_reconstruction(); fig_heading_bar(); fig_ladder(df); fig_canonical(df)
     fig_selloff()
+    fig_3t()
     for p in sorted(OUT.glob("*.png")):
         print(f"  {p.name}  {p.stat().st_size/1024:.0f} kB")

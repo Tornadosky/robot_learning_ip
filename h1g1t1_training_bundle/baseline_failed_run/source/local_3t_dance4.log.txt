@@ -1,0 +1,676 @@
+# --- first 120 lines ---
+jax_cache_patch: compilation-cache key now hashes device_kind only -> cross-node reuse for same GPU model
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.13)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[08-27 14:26:48] [create_env.py:125] INFO - Startup phase: train env spaces check (3 robots) took 29.8 s
+[08-27 14:26:56] [create_env.py:140] INFO - Startup phase: train env construction took 8.7 s
+[08-27 14:26:56] [urma2.py:119] INFO - Using device: gpu
+[08-27 14:29:38] [multi_environment.py:63] INFO - Startup phase: per-robot reset compile (3 robots) took 160.9 s
+[08-27 14:29:46] [urma2.py:302] INFO - Policy has 1477682 parameters
+[08-27 14:29:46] [urma2.py:303] INFO - Critic has 619596 parameters
+/home/smirn/jaxgpu/lib/python3.12/site-packages/jax/_src/interpreters/mlir.py:1316: UserWarning: Some donated buffers were not usable: ~int32[1], float32[1,512], float32[1,2080,512], float32[1,256], float32[1,512,256], float32[1,256], float32[1,256,256], float32[1,256], float32[1,256,256], float32[1,256], float32[1,256,256], float32[1,512], float32[1,512], float32[1,512], float32[1,256], float32[1,256], float32[1,256], float32[1,256], float32[1,256], float32[1,55,256], float32[1,256], float32[1,256,256], float32[1,8], float32[1,5,8], float32[1,256], float32[1,256], float32[1,1], float32[1,1], float32[1,256,1], int32[1], float32[1], float32[1], float32[1], float32[1], float32[1], int32[1], int32[1], float32[1,256], float32[1,55,256], float32[1,256], float32[1,256,256], float32[1,8], float32[1,5,8], float32[1,256], float32[1,256], float32[1,256], float32[1,55,256], float32[1,256], float32[1,256,256], float32[1,8], float32[1,5,8], float32[1,256], float32[1,256], int32[1], float32[1], float32[1], float32[1], float32[1], float32[1], float32[1], float32[1], ~int32[1], float32[1], int32[1], int32[1], float32[1,512], float32[1,256], float32[1,256], float32[1,256], float32[1,256], float32[1,512], float32[1,512], float32[1,512], float32[1,256], float32[1,256], float32[1,256], float32[1,256], float32[1,1], float32[1,1], float32[1,512], float32[1,256], float32[1,256], float32[1,256], float32[1,256], float32[1,512], float32[1,512], float32[1,512], float32[1,256], float32[1,256], float32[1,256], float32[1,256], float32[1,1], float32[1,1], int32[1], float32[1,2080,512], float32[1,512,256], float32[1,256,256], float32[1,256,256], float32[1,256,256], float32[1,256,1], float32[1,3], ~int32[1], float32[1,512], float32[1,800,512], float32[1,256], float32[1,512,256], float32[1,128], float32[1,256,128], float32[1,128], float32[1,128,128], float32[1,128], float32[1,128,128], float32[1,1], float32[1,128,1], float32[1,512], float32[1,512], float32[1,512], float32[1,256], float32[1,128], float32[1,128], float32[1,128], float32[1,1], float32[1,32], float32[1,25,32], float32[1,32], float32[1,32,32], float32[1,8], float32[1,6,8], float32[1,32], float32[1,32], float32[1,64], float32[1,55,64], float32[1,64], float32[1,64,64], float32[1,8], float32[1,5,8], float32[1,64], float32[1,64], float32[1,1], float32[1,1], int32[1], float32[1], float32[1], float32[1], float32[1], float32[1], int32[1], int32[1], float32[1,32], float32[1,25,32], float32[1,32], float32[1,32,32], float32[1,8], float32[1,6,8], float32[1,32], float32[1,32], float32[1,64], float32[1,55,64], float32[1,64], float32[1,64,64], float32[1,8], float32[1,5,8], float32[1,64], float32[1,64], float32[1,32], float32[1,25,32], float32[1,32], float32[1,32,32], float32[1,8], float32[1,6,8], float32[1,32], float32[1,32], float32[1,64], float32[1,55,64], float32[1,64], float32[1,64,64], float32[1,8], float32[1,5,8], float32[1,64], float32[1,64], int32[1], float32[1], float32[1], float32[1], float32[1], float32[1], float32[1], float32[1], ~int32[1], float32[1], int32[1], int32[1], float32[1,512], float32[1,256], float32[1,128], float32[1,128], float32[1,128], float32[1,1], float32[1,512], float32[1,512], float32[1,512], float32[1,256], float32[1,128], float32[1,128], float32[1,128], float32[1,1], float32[1,1], float32[1,1], float32[1,512], float32[1,256], float32[1,128], float32[1,128], float32[1,128], float32[1,1], float32[1,512], float32[1,512], float32[1,512], float32[1,256], float32[1,128], float32[1,128], float32[1,128], float32[1,1], float32[1,1], float32[1,1], int32[1], float32[1,800,512], float32[1,512,256], float32[1,256,128], float32[1,128,128], float32[1,128,128], float32[1,128,1], float32[1,3], float32[1,576,3362], float32[1,192,19,10], float32[1,192,19,2], float32[1,192,19,10], float32[1,192,21,3], float32[1,192,21,3], float32[1,192,21,4], float32[1,192,21], float32[1,192,21,3], float32[1,192,21,4], float32[1,192,2,3], float32[1,192,25], float32[1,192,25], float32[1,192,25], float32[1,192,27,3], float32[1,192,27,3], float32[1,192,27], float32[1,192,27,3], float32[1,192,27,5], float32[1,192,27,2], float32[1,192,0], float32[1,192,20,3], float32[1,192,20,3], float32[1,192,20,2], float32[1,192,20], float32[1,192], float32[1,192,3], float32[1,192], float32[1,192], float32[1,192,3,3], float32[1,192], float32[1,192,26], float32[1,192,25], float32[1,192,0], float32[1,192,0], float32[1,192,25], float32[1,192,0], float32[1,192,19], float32[1,192,25], float32[1,192,21,6], uint8[1,192,0], float32[1,192,0,3], float32[1,192,0,4], float32[1,192,25], float32[1,192,0], float32[1,192,0], float32[1,192,12], float32[1,192,21,3], float32[1,192,21,4], float32[1,192,21,3,3], float32[1,192,21,3], float32[1,192,21,3,3], float32[1,192,20,3], float32[1,192,20,3], float32[1,192,0], float32[1,192,27,3], float32[1,192,27,3,3], float32[1,192,3,3], float32[1,192,3,3,3], float32[1,192,2,3], float32[1,192,2,3,3], float32[1,192,21,3], float32[1,192,21,6], float32[1,192,25,6], float32[1,192,25,6], float32[1,192,25], float32[1,192,25], float32[1,192,25], float32[1,192,25], float32[1,192,25], float32[1,192,19], float32[1,192,19], float32[1,192,25], float32[1,192,25], float32[1,192,25], float32[1,192,25], int32[1,192], float32[1,192,21,10], int32[1,192,0], int32[1,192,0], float32[1,192,0,25], int32[1,192,0,2], float32[1,192,0,6], float32[1,192,19,25], float32[1,192,21,10], float32[1,192,25,25], float32[1,192,194], float32[1,192,25,25], float32[1,192,0], float32[1,192,0], float32[1,192,19], float32[1,192,21,6], float32[1,192,21,6], float32[1,192,21,6], float32[1,192,21,3], float32[1,192,21,3], float32[1,192,8], float32[1,192,8,3], float32[1,192,8,3,3], float32[1,192,8], float32[1,192,8,5], float32[1,192,8,2], float32[1,192,8,2], float32[1,192,8,5], int32[1,192,8], int32[1,192,8], int32[1,192,8,2], int32[1,192,118], float32[1,192,118,25], float32[1,192,118], float32[1,192,118], float32[1,192,118], float32[1,192,118], float32[1,192,118], float32[1,192,118], float32[1,192,3362], float32[1,192,3362], ~float32[1,192], bool[1,192], bool[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~float32[1,192], float32[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], float32[1,192,4], float32[1,192,5,19], int32[1,192], int32[1,192], bool[1,192,19], bool[1,192,19], bool[1,192,19], bool[1,192,19], float32[1,192,19], float32[1,192,19], float32[1,192,20,3], float32[1,192], float32[1,192,20,3], float32[1,192,2,19], float32[1,192,19,51], float32[1,192,19], bool[1,192], bool[1,192], ~float32[1,192], ~float32[1,192], float32[1,192,2], float32[1,192,2], float32[1,192,19], float32[1,192,4], float32[1,192,3], float32[1,192,4], float32[1,192,4], bool[1,192], float32[1,192,19], float32[1,192,19], float32[1,192,19], float32[1,192,19,2], float32[1,192,19], float32[1,192], float32[1,192,19], float32[1,192,20], float32[1,192], float32[1,192], float32[1,192], float32[1,192,1], float32[1,192,2], int32[1,192], float32[1,192,24], float32[1,192,19], float32[1,192,19,2], float32[1,192,19], float32[1,192,19,51], float32[1,192,19], float32[1,192,19], float32[1,192,3], ~float32[1,192], float32[1,192,19], float32[1,192,19], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192,3], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], bool[1,192], float32[1,192,19], float32[1,192,19], float32[1,192,19], float32[1,192,19], float32[1,192,19], float32[1,192,20,3], float32[1,192,20,3], float32[1,192,20], float32[1,192,20,3], float32[1,192,19], float32[1,192,19], float32[1,192,19], float32[1,192,19,2], float32[1,192,19], float32[1,192,1], float32[1,192,19], float32[1,192,7], ~float32[1,192], ~float32[1,192], float32[1,192,1], float32[1,192,7], uint32[1,192,2], float32[1,192,29,10], float32[1,192,29,2], float32[1,192,29,10], float32[1,192,31,3], float32[1,192,31,3], float32[1,192,31,4], float32[1,192,31], float32[1,192,31,3], float32[1,192,31,4], float32[1,192,2,3], float32[1,192,35], float32[1,192,35], float32[1,192,35], float32[1,192,30,3], float32[1,192,30,3], float32[1,192,30], float32[1,192,30,3], float32[1,192,30,5], float32[1,192,30,2], float32[1,192,0], float32[1,192,30,3], float32[1,192,30,3], float32[1,192,30,2], float32[1,192,30], float32[1,192], float32[1,192,3], float32[1,192], float32[1,192], float32[1,192,3,3], float32[1,192], float32[1,192,36], float32[1,192,35], float32[1,192,0], float32[1,192,0], float32[1,192,35], float32[1,192,0], float32[1,192,29], float32[1,192,35], float32[1,192,31,6], uint8[1,192,0], float32[1,192,0,3], float32[1,192,0,4], float32[1,192,35], float32[1,192,0], float32[1,192,0], float32[1,192,12], float32[1,192,31,3], float32[1,192,31,4], float32[1,192,31,3,3], float32[1,192,31,3], float32[1,192,31,3,3], float32[1,192,30,3], float32[1,192,30,3], float32[1,192,8], float32[1,192,30,3], float32[1,192,30,3,3], float32[1,192,3,3], float32[1,192,3,3,3], float32[1,192,2,3], float32[1,192,2,3,3], float32[1,192,31,3], float32[1,192,31,6], float32[1,192,35,6], float32[1,192,35,6], float32[1,192,35], float32[1,192,35], float32[1,192,35], float32[1,192,35], float32[1,192,35], float32[1,192,29], float32[1,192,29], float32[1,192,35], float32[1,192,35], float32[1,192,35], float32[1,192,35], int32[1,192], float32[1,192,31,10], int32[1,192,8], int32[1,192,8], float32[1,192,8,35], int32[1,192,16,2], float32[1,192,16,6], float32[1,192,29,35], float32[1,192,31,10], float32[1,192,35,35], float32[1,192,341], float32[1,192,35,35], float32[1,192,0], float32[1,192,8], float32[1,192,29], float32[1,192,31,6], float32[1,192,31,6], float32[1,192,31,6], float32[1,192,31,3], float32[1,192,31,3], float32[1,192,8], float32[1,192,8,3], float32[1,192,8,3,3], float32[1,192,8], float32[1,192,8,5], float32[1,192,8,2], float32[1,192,8,2], float32[1,192,8,5], int32[1,192,8], int32[1,192,8], int32[1,192,8,2], int32[1,192,146], float32[1,192,146,35], float32[1,192,146], float32[1,192,146], float32[1,192,146], float32[1,192,146], float32[1,192,146], float32[1,192,146], float32[1,192,3362], float32[1,192,3362], ~float32[1,192], bool[1,192], bool[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~float32[1,192], float32[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], float32[1,192,4], float32[1,192,5,29], int32[1,192], int32[1,192], bool[1,192,29], bool[1,192,29], bool[1,192,29], bool[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,30,3], float32[1,192], float32[1,192,30,3], float32[1,192,2,19], float32[1,192,29,51], float32[1,192,29], bool[1,192], bool[1,192], ~float32[1,192], ~float32[1,192], float32[1,192,2], float32[1,192,2], float32[1,192,29], float32[1,192,4], float32[1,192,3], float32[1,192,4], float32[1,192,4], bool[1,192], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29,2], float32[1,192,29], float32[1,192], float32[1,192,29], float32[1,192,30], float32[1,192], float32[1,192], float32[1,192], float32[1,192,1], float32[1,192,2], int32[1,192], float32[1,192,27], float32[1,192,29], float32[1,192,29,2], float32[1,192,29], float32[1,192,29,51], float32[1,192,29], float32[1,192,29], float32[1,192,3], ~float32[1,192], float32[1,192,29], float32[1,192,29], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192,3], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], bool[1,192], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,30,3], float32[1,192,30,3], float32[1,192,30], float32[1,192,30,3], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29,2], float32[1,192,29], float32[1,192,1], float32[1,192,29], float32[1,192,7], ~float32[1,192], ~float32[1,192], float32[1,192,1], float32[1,192,7], uint32[1,192,2], float32[1,192,23,10], float32[1,192,23,2], float32[1,192,23,10], float32[1,192,25,3], float32[1,192,25,3], float32[1,192,25,4], float32[1,192,25], float32[1,192,25,3], float32[1,192,25,4], float32[1,192,2,3], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,28,3], float32[1,192,28,3], float32[1,192,28], float32[1,192,28,3], float32[1,192,28,5], float32[1,192,28,2], float32[1,192,0], float32[1,192,24,3], float32[1,192,24,3], float32[1,192,24,2], float32[1,192,24], float32[1,192], float32[1,192,3], float32[1,192], float32[1,192], float32[1,192,3,3], float32[1,192], float32[1,192,30], float32[1,192,29], float32[1,192,0], float32[1,192,0], float32[1,192,29], float32[1,192,0], float32[1,192,23], float32[1,192,29], float32[1,192,25,6], uint8[1,192,0], float32[1,192,0,3], float32[1,192,0,4], float32[1,192,29], float32[1,192,0], float32[1,192,0], float32[1,192,12], float32[1,192,25,3], float32[1,192,25,4], float32[1,192,25,3,3], float32[1,192,25,3], float32[1,192,25,3,3], float32[1,192,24,3], float32[1,192,24,3], float32[1,192,0], float32[1,192,28,3], float32[1,192,28,3,3], float32[1,192,3,3], float32[1,192,3,3,3], float32[1,192,2,3], float32[1,192,2,3,3], float32[1,192,25,3], float32[1,192,25,6], float32[1,192,29,6], float32[1,192,29,6], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,23], float32[1,192,23], float32[1,192,29], float32[1,192,29], float32[1,192,29], float32[1,192,29], int32[1,192], float32[1,192,25,10], int32[1,192,0], int32[1,192,0], float32[1,192,0,29], int32[1,192,0,2], float32[1,192,0,6], float32[1,192,23,29], float32[1,192,25,10], float32[1,192,29,29], float32[1,192,237], float32[1,192,29,29], float32[1,192,0], float32[1,192,0], float32[1,192,23], float32[1,192,25,6], float32[1,192,25,6], float32[1,192,25,6], float32[1,192,25,3], float32[1,192,25,3], float32[1,192,8], float32[1,192,8,3], float32[1,192,8,3,3], float32[1,192,8], float32[1,192,8,5], float32[1,192,8,2], float32[1,192,8,2], float32[1,192,8,5], int32[1,192,8], int32[1,192,8], int32[1,192,8,2], int32[1,192,126], float32[1,192,126,29], float32[1,192,126], float32[1,192,126], float32[1,192,126], float32[1,192,126], float32[1,192,126], float32[1,192,126], float32[1,192,3362], float32[1,192,3362], ~float32[1,192], bool[1,192], bool[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~float32[1,192], float32[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], float32[1,192,4], float32[1,192,5,23], int32[1,192], int32[1,192], bool[1,192,23], bool[1,192,23], bool[1,192,23], bool[1,192,23], float32[1,192,23], float32[1,192,23], float32[1,192,24,3], float32[1,192], float32[1,192,24,3], float32[1,192,2,19], float32[1,192,23,51], float32[1,192,23], bool[1,192], bool[1,192], ~float32[1,192], ~float32[1,192], float32[1,192,2], float32[1,192,2], float32[1,192,23], float32[1,192,4], float32[1,192,3], float32[1,192,4], float32[1,192,4], bool[1,192], float32[1,192,23], float32[1,192,23], float32[1,192,23], float32[1,192,23,2], float32[1,192,23], float32[1,192], float32[1,192,23], float32[1,192,24], float32[1,192], float32[1,192], float32[1,192], float32[1,192,1], float32[1,192,2], int32[1,192], float32[1,192,25], float32[1,192,23], float32[1,192,23,2], float32[1,192,23], float32[1,192,23,51], float32[1,192,23], float32[1,192,23], float32[1,192,3], ~float32[1,192], float32[1,192,23], float32[1,192,23], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192,3], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], bool[1,192], float32[1,192,23], float32[1,192,23], float32[1,192,23], float32[1,192,23], float32[1,192,23], float32[1,192,24,3], float32[1,192,24,3], float32[1,192,24], float32[1,192,24,3], float32[1,192,23], float32[1,192,23], float32[1,192,23], float32[1,192,23,2], float32[1,192,23], float32[1,192,1], float32[1,192,23], float32[1,192,7], ~float32[1,192], ~float32[1,192], float32[1,192,1], float32[1,192,7], uint32[1,192,2], ~float32[1,192], ~float32[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~float32[1,192], ~float32[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~float32[1,192], ~float32[1,192], ~float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], float32[1,192], ~int32[1,192], ~int32[1,192], ~int32[1,192], ~float32[1,192], ~float32[1,192], ~float32[1,192], float32[1,576,3362], ~float32[1,576], bool[1,576], bool[1,576], uint32[1,2].
+See an explanation at https://docs.jax.dev/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+[08-27 14:45:27] [urma2.py:873] INFO - ┌───────────────────────────────┬────────────────┐
+[08-27 14:45:27] [urma2.py:866] INFO - │ critic/foot_softmax_temp      │ 0.901844561100 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ critic/joint_softmax_temp     │ 0.839464068412 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/coefficient/g1 │ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/coefficient/h1 │ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/coefficient/mean│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/coefficient/t1 │ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/gait_coeff/g1  │ 0.25           │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/gait_coeff/h1  │ 0.25           │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/gait_coeff/t1  │ 0.25           │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/morphology_coeff/g1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/morphology_coeff/h1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_curriculum/morphology_coeff/t1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/active_velocity_diff_abs/g1│ 0.855231761932 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/active_velocity_diff_abs/h1│ 0.774744868278 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/active_velocity_diff_abs/t1│ 0.634670913219 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/active_velocity_diff_abs_normalized/g1│ 0.855231761932 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/active_velocity_diff_abs_normalized/h1│ 0.774744868278 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/active_velocity_diff_abs_normalized/t1│ 0.634670913219 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_airborne/g1     │ 0.165771484375 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_airborne/h1     │ 0.274983733892 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_airborne/t1     │ 0.158365890383 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_clearance_m/g1  │ 0.009423157200 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_clearance_m/h1  │ 0.022731468081 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_clearance_m/t1  │ 0.007752328179 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_contact_frac/g1 │ 0.603678405284 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_contact_frac/h1 │ 0.536051452159 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_contact_frac/t1 │ 0.670206725597 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.007847646251 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.006353714969 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.006077731028 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_reward/g1│ 0.417802929878 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_reward/h1│ 0.412889420986 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_reward/t1│ 0.419681638479 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_penetration_m/g1│ 0.006796863861 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_penetration_m/h1│ 0.011524049565 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_penetration_m/t1│ 0.008254208602 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_slip_speed_sq/g1│ 0.593369841575 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_slip_speed_sq/h1│ 1.067471504211 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_slip_speed_sq/t1│ 0.210127100348 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_z_speed_sq/g1   │ 0.643436670303 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_z_speed_sq/h1   │ 2.239364624023 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_z_speed_sq/t1   │ 0.362663835287 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_diff_abs/g1│ 0.057982087135 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_diff_abs/h1│ 0.099400758743 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_diff_abs/mean│ 0.070059530436 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_diff_abs/t1│ 0.052795737981 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_over_ground/g1│ 0.726123273372 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_over_ground/h1│ 1.186879158020 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_over_ground/mean│ 0.838748455047 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/imu_height_over_ground/t1│ 0.603242754936 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.264433264732 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.333844035863 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.776515185832 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.019648123532 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.045576356351 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.044448237866 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 23.70313644409 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 16.42705345153 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 27.36001205444 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_reward/g1│ 0.037940017879 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_reward/h1│ 0.073653750121 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_reward/t1│ 0.039832096546 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/ref_foot_airborne/g1 │ 0.256184905767 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/ref_foot_airborne/h1 │ 0.11181640625  │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/ref_foot_airborne/t1 │ 0.071370445191 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/ref_foot_penetration_m/g1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/ref_foot_penetration_m/h1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/ref_foot_penetration_m/t1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/reference_velocity_scale/g1│ 4.648337364196 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/reference_velocity_scale/h1│ 5.756480216979 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/reference_velocity_scale/t1│ 4.029872417449 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 0.434432446956 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 0.194805726408 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 0.148919731378 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_height_tracking_reward/g1│ 0.010812615975 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_height_tracking_reward/h1│ 0.009345214813 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_height_tracking_reward/t1│ 0.010273199528 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.020566632971 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.007636572234 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.007627990096 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_reward/g1│ 0.213772416114 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_reward/h1│ 0.420302689075 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_reward/t1│ 0.420400381088 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.185185611248 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.102151572704 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.164038360118 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_reward/g1│ 0.098705612123 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_reward/h1│ 0.195461302995 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_reward/t1│ 0.132529646158 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/tracked_frame_command_backtracking_fraction/g1│ 0.448215067386 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/tracked_frame_command_backtracking_fraction/h1│ 0.371324360370 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/tracked_frame_command_backtracking_fraction/t1│ 0.349148213863 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/tracked_frame_command_backtracking_normalized/g1│ 0.387458413839 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/tracked_frame_command_backtracking_normalized/h1│ 0.266465932130 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/tracked_frame_command_backtracking_normalized/t1│ 0.205440461635 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs/g1 │ 0.720703482627 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs/h1 │ 0.819799900054 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs/mean│ 0.728804469108 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs/t1 │ 0.645910024642 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs_normalized/g1│ 0.720703482627 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs_normalized/h1│ 0.819799900054 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs_normalized/mean│ 0.728804469108 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/velocity_diff_abs_normalized/t1│ 0.645910024642 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/x_vel_diff_abs/g1    │ 0.460649192333 │
+
+# --- matched diagnostic lines ---
+[08-27 14:26:48] [create_env.py:125] INFO - Startup phase: train env spaces check (3 robots) took 29.8 s
+[08-27 14:26:56] [create_env.py:140] INFO - Startup phase: train env construction took 8.7 s
+[08-27 14:29:38] [multi_environment.py:63] INFO - Startup phase: per-robot reset compile (3 robots) took 160.9 s
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.007847646251 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.006353714969 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.006077731028 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.264433264732 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.333844035863 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.776515185832 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.019648123532 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.045576356351 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.044448237866 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 23.70313644409 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 16.42705345153 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 27.36001205444 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 0.434432446956 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 0.194805726408 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 0.148919731378 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.020566632971 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.007636572234 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.007627990096 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.185185611248 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.102151572704 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.164038360118 │
+[08-27 14:45:27] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 36864          │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.005087115801 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.006753910332 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.006103233899 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.267203897237 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.348499387502 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.799710929393 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.017079224810 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.040398046374 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.039749518036 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 24.13027572631 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 16.75085639953 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 27.14312553405 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 0.474647879600 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 0.194834917783 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 0.151010245084 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.022555753588 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.008077593520 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.008123146370 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.193748205900 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.105309270322 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.169010370969 │
+[08-27 14:45:33] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 73728          │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.005593607202 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.006675763055 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.006430141627 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.268370777368 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.366145700216 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.804673612117 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.017013652250 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.040286343544 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.039103582501 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 24.18277549743 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 16.84387779235 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 27.27493286132 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 0.503172516822 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 0.195511549711 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 0.152233034372 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.022237403318 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.008510854095 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.008123057894 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.191154718399 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.110910736024 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.169697135686 │
+[08-27 14:45:39] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 110592         │
+[08-27 14:45:45] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.006222003605 │
+[08-27 14:45:45] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.006510849576 │
+# ... matched lines truncated ...
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.130892544984 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.297878593206 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.134299486875 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.123132467269 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.680433273315 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.344485759735 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.593944549560 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.536576032638 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.438365459442 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.295379519462 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003839098382 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003688593162 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004443520680 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.027324076741 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.030668279156 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.050519131124 │
+[08-27 15:38:03] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18726912       │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.010573553852 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.012831742875 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.009784303605 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.039056822657 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.088067203760 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.138517126441 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.298881590366 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.137357145547 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.124248944222 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.574163436889 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.314586162567 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.737857818603 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.431312322616 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.398284912109 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.315580844879 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003892417997 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003584603313 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004604807123 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.027217386290 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.029617048799 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.051994036883 │
+[08-27 15:38:09] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18763776       │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.009036220610 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.011120697483 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008627985604 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.037281852215 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.087451145052 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.130232453346 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.304948568344 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.139985024929 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.134695649147 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.554293155670 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.201440334320 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.582940578460 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.401021718978 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.381466865539 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.337258696556 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003622223157 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003448108909 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004492298699 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.025680065155 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.029730960726 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.049292296171 │
+[08-27 15:38:15] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18800640       │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.009810098446 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.009357503615 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008618270978 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.038240134716 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.085252664983 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.125068113207 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.300764203071 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.142318040132 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.134536832571 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.510390281677 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.102328777313 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.426245689392 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.448307991027 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.421384572982 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.324941873550 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003653206629 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003349522827 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004381121601 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.026060676202 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.029241396114 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.047732464969 │
+[08-27 15:38:21] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18837504       │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.009051367640 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.011656498536 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.009471840225 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.037559490650 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.087281078100 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.121990852057 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.302440762519 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.141818150877 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.138356447219 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.577025890350 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.304623603820 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.367234706878 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.563131809234 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.466523885726 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.297277331352 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003796825883 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003532350761 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004255865234 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.025971181690 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.029777800664 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.046567570418 │
+[08-27 15:38:27] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18874368       │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.010061955079 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.011069700121 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.009079273790 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.037955977022 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.084756731986 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.136588305234 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.303888857364 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.142481952905 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.133962422609 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.553129196166 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.273521423339 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.399404525756 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.498012542724 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.440970778465 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.351710677146 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003828953485 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003513560397 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004455375950 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.026225324720 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.029642386361 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.049930613487 │
+[08-27 15:38:33] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18911232       │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.006771308835 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.010983316227 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008520886301 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.035276949405 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.085186913609 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.127401560544 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.311894387006 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.142813116312 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.138033643364 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.495465278625 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.164635181427 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.320648193359 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.498444080352 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.426123976707 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.314681768417 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003741350956 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003310152096 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004400328733 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.025635506957 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.029075369238 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.047562535852 │
+[08-27 15:38:39] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18948096       │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.005569006316 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.007620054297 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008776231668 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.034135609865 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.082244962453 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.127421319484 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.315532892942 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.144635513424 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.136269673705 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.373074054718 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 5.004536151885 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.273131847381 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.542708754539 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.452914237976 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.325546979904 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003369978163 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003154968610 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004239896778 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.023802962154 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.028747349977 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.047523748129 │
+[08-27 15:38:45] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 18984960       │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.006654369644 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.005501694511 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008474536240 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.034849122166 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.079438999295 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.114450715482 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.313307791948 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.150919049978 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.136833384633 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.366292953491 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 4.961500644683 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.010669231414 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.540895819664 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.440902948379 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.425498723983 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003315581008 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003041869727 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004052957054 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.023791052401 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.027831807732 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.044324882328 │
+[08-27 15:38:51] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 19021824       │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.006896918639 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.007265525870 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008558223024 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.034420493990 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.080188497900 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.113764092326 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.314851164817 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.150278314948 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.142619892954 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.350502967834 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 4.959853172302 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 4.992639064788 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.513732314109 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.456025123596 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.418812155723 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003334381384 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003076658351 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004064018838 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.023675769567 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.027795178815 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.044132322072 │
+[08-27 15:38:57] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 19058688       │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.013852114789 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.007013158407 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.009338970296 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.037549611181 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.079564675688 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.116832457482 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.307878851890 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.153989881277 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.137081086635 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.307271003723 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 4.858360290527 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 4.999724388122 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.492031097412 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.464501380920 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.464468479156 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003617521375 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.002908253809 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004181122407 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.025194665417 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.027134329080 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.044881712645 │
+[08-27 15:39:03] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 19095552       │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.008840191178 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.006026729010 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008427316322 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.035860415548 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.078144773840 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.111674636602 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.310024857521 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.154208943247 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.140572592616 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.306696891784 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 4.817103385925 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 4.988973140716 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.421695113182 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.554403066635 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.368454933166 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003435930004 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.002954564755 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004089555237 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.024575192481 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.027102474123 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.043680638074 │
+[08-27 15:39:09] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 19132416       │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/foot_height_error/g1 │ 0.012428380548 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/foot_height_error/h1 │ 0.007649531122 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/foot_height_error/t1 │ 0.008893635123 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/joint_tracking_error/g1│ 0.038008738309 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/joint_tracking_error/h1│ 0.080692887306 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/joint_tracking_error/t1│ 0.120085917413 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/g1│ 0.308959960937 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/h1│ 0.150202274322 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/joint_tracking_reward/t1│ 0.137706249952 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/g1│ 4.390005111694 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/h1│ 4.960950374603 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/qvel_tracking_error/t1│ 5.310035705566 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/root_heading_error/g1│ 1.514482259750 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/root_heading_error/h1│ 1.556465864181 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/root_heading_error/t1│ 1.437741994857 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/g1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/h1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/root_heading_tracking_reward/t1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/g1│ 0.003783137071 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/h1│ 0.003143560839 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/rpos_tracking_error/t1│ 0.004274959675 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/g1│ 0.025955721735 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/h1│ 0.028220115229 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/rquat_tracking_error/t1│ 0.045780383050 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 19169280       │
+
+# --- last 150 lines ---
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/velocity_diff_abs_normalized/mean│ 0.547323703765 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/velocity_diff_abs_normalized/t1│ 0.458128303289 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/x_vel_diff_abs/g1    │ 0.306106597185 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/x_vel_diff_abs/h1    │ 0.563311398029 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/x_vel_diff_abs/mean  │ 0.378050982952 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/x_vel_diff_abs/t1    │ 0.264734923839 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs/g1   │ 0.291810065507 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs/h1   │ 0.531497001647 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs/mean │ 0.358647674322 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs/t1   │ 0.252635955810 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs_normalized/g1│ 0.291810065507 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs_normalized/h1│ 0.531497001647 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs_normalized/mean│ 0.358647674322 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/xy_vel_diff_abs_normalized/t1│ 0.252635955810 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/y_vel_diff_abs/g1    │ 0.277513563632 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/y_vel_diff_abs/h1    │ 0.499682545661 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/y_vel_diff_abs/mean  │ 0.339244365692 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/y_vel_diff_abs/t1    │ 0.240537047386 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/yaw_vel_diff_abs/g1  │ 1.316060781478 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/yaw_vel_diff_abs/h1  │ 1.389705657958 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/yaw_vel_diff_abs/mean│ 1.290176391601 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/yaw_vel_diff_abs/t1  │ 1.164762496948 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_command_negative_fraction/g1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_command_negative_fraction/h1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_command_negative_fraction/t1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_command_positive_fraction/g1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_command_positive_fraction/h1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_command_positive_fraction/t1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs/g1    │ 0.187184303998 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs/h1    │ 0.195805996656 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs/mean  │ 0.181823015213 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs/t1    │ 0.162478730082 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs_negative_command_weighted/g1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs_negative_command_weighted/h1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs_negative_command_weighted/t1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs_positive_command_weighted/g1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs_positive_command_weighted/h1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ env_info/z_vel_diff_abs_positive_command_weighted/t1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ gradients/critic_grad_norm    │ 82.80491638183 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ gradients/policy_grad_norm    │ 4.953258991241 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ loss/critic_loss              │ 3.687114715576 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ loss/entropy_loss             │ 0.627454102039 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ loss/policy_gradient_loss     │ 0.023632450029 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ lr/learning_rate              │ 0.014767172746 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ policy/joint_softmax_temp     │ 0.127891182899 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ policy/std_dev                │ 0.471997916698 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ policy_ratio/approx_kl        │ 0.045599758625 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ policy_ratio/clip_fraction    │ 0.696256399154 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/action_rate/g1         │ -0.00798616837 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/action_rate/h1         │ -0.01213156338 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/action_rate/t1         │ -0.02118727378 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/action_smoothness/g1   │ -0.00077418680 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/action_smoothness/h1   │ -0.00113560282 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/action_smoothness/t1   │ -0.00213024672 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/actuator_joint_nominal_diff/g1│ -0.00789796561 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/actuator_joint_nominal_diff/h1│ -0.00986749213 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/actuator_joint_nominal_diff/t1│ -0.04490819200 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/alive_clipped/g1       │ 0.000250000011 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/alive_clipped/h1       │ 0.000250000011 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/alive_clipped/t1       │ 0.000251386751 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/alive_unclipped/g1     │ 0.000250000011 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/alive_unclipped/h1     │ 0.000250000011 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/alive_unclipped/t1     │ 0.000251386751 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/angular_position/g1    │ -0.00063733942 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/angular_position/h1    │ -0.00064027798 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/angular_position/t1    │ -0.00112667575 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/angular_velocity/g1    │ -0.00171898433 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/angular_velocity/h1    │ -0.00021644166 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/angular_velocity/t1    │ -0.00031122038 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/base_height/g1         │ -0.00038456017 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/base_height/h1         │ -0.00064000056 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/base_height/t1         │ -0.00011632221 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/collision/g1           │ -0.00362711562 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/collision/h1           │ -0.00026448565 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/collision/t1           │ -0.00112499995 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/feet_lateral_min_distance/g1│ -0.00005839412 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/feet_lateral_min_distance/h1│ -0.00004263466 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/feet_lateral_min_distance/t1│ -0.00008740148 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/feet_orientation/g1    │ -0.00109749124 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/feet_orientation/h1    │ -0.00255980622 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/feet_orientation/t1    │ -0.00216478435 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_air_time/g1       │ -0.00313195656 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_air_time/h1       │ -0.00323376804 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_air_time/t1       │ -0.00344019336 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_flat_contact/g1   │ -0.00008947143 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_flat_contact/h1   │ -0.00006732584 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_flat_contact/t1   │ -0.00010846882 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_slip/g1           │ -0.01294660847 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_slip/h1           │ -0.03890722990 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_slip/t1           │ -0.01217993535 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_z_velocity/g1     │ -0.00057053123 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_z_velocity/h1     │ -0.00116811774 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/foot_z_velocity/t1     │ -0.00042839426 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/ground_penetration/g1  │ -0.01510439068 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/ground_penetration/h1  │ -0.00846943072 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/ground_penetration/t1  │ -0.02314118109 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/imu_acceleration/g1    │ -0.00004658747 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/imu_acceleration/h1    │ -0.00002195719 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/imu_acceleration/t1    │ -0.00001077480 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_acceleration/g1  │ -0.00294355256 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_acceleration/h1  │ -0.00356486788 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_acceleration/t1  │ -0.00229299068 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_position_limit/g1│ -0.00060472625 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_position_limit/h1│ -0.00174990412 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_position_limit/t1│ -0.00171482365 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_torque/g1        │ -0.00001969429 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_torque/h1        │ -0.00003113918 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_torque/t1        │ -0.00003948336 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_velocity/g1      │ -0.00004146806 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_velocity/h1      │ -0.00005840150 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_velocity/t1      │ -0.00004148142 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_velocity_limit/g1│ -0.00005825335 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_velocity_limit/h1│ -0.00476324139 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/joint_velocity_limit/t1│ -0.00111649790 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/power_draw_penalty/g1  │ -0.00000311595 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/power_draw_penalty/h1  │ -0.00001014003 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/power_draw_penalty/t1  │ -0.00001001055 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/symmetry_air/g1        │ -0.00032714841 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/symmetry_air/h1        │ -0.00042277015 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/symmetry_air/t1        │ -0.00009327799 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/total/g1               │ 1.819006681442 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/total/h1               │ 1.667962312698 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/total/t1               │ 1.522968649864 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_xy_vel_cmd/g1    │ 0.020139610394 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_xy_vel_cmd/h1    │ 0.009175991639 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_xy_vel_cmd/t1    │ 0.023112054914 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_yaw_vel_cmd/g1   │ 0.003222029423 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_yaw_vel_cmd/h1   │ 0.002763735828 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_yaw_vel_cmd/t1   │ 0.004043217282 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_z_vel_cmd/g1     │ 0.016688361763 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_z_vel_cmd/h1     │ 0.016454150900 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/track_z_vel_cmd/t1     │ 0.017365232110 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/tracked_frame_command_backtracking/g1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/tracked_frame_command_backtracking/h1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ reward/tracked_frame_command_backtracking/t1│ 0              │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_length/g1     │ 919.6556396484 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_length/h1     │ 922.712890625  │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_length/mean   │ 878.2253417968 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_length/t1     │ 792.3075561523 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_return/g1     │ 1658.625732421 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_return/h1     │ 1510.720458984 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_return/mean   │ 1455.186523437 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ rollout/episode_return/t1     │ 1196.213134765 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ v_value/explained_variance    │ 0.990156650543 │
+[08-27 15:39:15] [urma2.py:866] INFO - │ time/sps                      │ 6221           │
+[08-27 15:39:15] [urma2.py:866] INFO - │ steps/nr_env_steps            │ 19169280       │
+[08-27 15:39:15] [urma2.py:866] INFO - │ steps/nr_robot_type_steps     │ 6389760        │
+[08-27 15:39:15] [urma2.py:866] INFO - │ steps/nr_updates              │ 15600          │
+[08-27 15:39:15] [urma2.py:882] INFO - └───────────────────────────────┴────────────────┘
+[08-27 15:39:16] [urma2.py:852] INFO - Average time: 4021.38 s

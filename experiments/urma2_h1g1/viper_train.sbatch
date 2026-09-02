@@ -126,6 +126,7 @@ elif [ "$STAGE" = "mmtrain" ]; then
          --environment.reward.nominal_diff_target="${NOMINAL_TARGET:-reference}"
          --environment.reward.joint_tracking_coeff="${TRACK_COEFF:-30.0}"
          --environment.reward.joint_tracking_temperature="${TRACK_TEMP:-0.25}"
+         --environment.reward.joint_tracking_leg_weight="${LEGW:-1.0}"
          --environment.reward.tracking_curriculum_gated="${GATED:-False}"
          # L1-A (RealWalk): a FLOOR under the 25 gait terms, so they cannot be
          # switched off by a velocity-error regulator that never moves. The N3
@@ -140,7 +141,7 @@ elif [ "$STAGE" = "mmtrain" ]; then
          --environment.reward.deepmimic_qvel_temperature="${QVEL_TEMP:-0.5}"
          # B100 (2026-08-22) quality knobs. Defaults preserve old behaviour.
          # HEADING_RATIO alone is NOT enough for dance: at temp 0.25 the term
-         # saturates dead past ~60 deg â€” raise HEADING_TEMP with it (B2: 2.0).
+         # saturates dead past ~60 deg — raise HEADING_TEMP with it (B2: 2.0).
          --environment.reward.root_heading_tracking_weight_ratio="${HEADING_RATIO:-0.0}"
          --environment.reward.root_heading_tracking_temperature="${HEADING_TEMP:-0.25}"
          # TRACK_DEVIATION and DEVRATIO are the SAME flag; this line is the only
@@ -158,6 +159,23 @@ elif [ "$STAGE" = "mmtrain" ]; then
          --environment.reward.deepmimic_foot_height_temperature="${FOOTH_TEMP:-0.01}"
          --environment.reward.foot_z_velocity_coeff="${FOOTZVEL:-0.2}"
          --environment.command.tracking_clip_latent_hold="${LATENT_HOLD:-1}"
+         # FSQ token routing (2026-08-29). Before this, LATENT_HOLD was the only
+         # reachable token knob from here -- turning the token ON at all needed
+         # EXTRA_ARGS. LATENT_SCOPE decides WHERE the code enters: "per_joint"
+         # is the historical layout, which appends 32 code channels to each
+         # joint's 5 and pushes all 37 through the joint encoder's single
+         # Dense(4); "global" routes one pooled motion embedding into the
+         # general observation, which reaches the 512-wide core unbottlenecked.
+         # LATENT_DIVISOR is the per-channel normalisation the latent block
+         # never had -- every other channel group has a set_norm entry, and at
+         # divisor 1.0 the codes enter ~559x louder than the five real channels
+         # beside them.
+         --environment.command.tracking_clip_latent_obs="${LATENT_OBS:-False}"
+         --environment.command.tracking_clip_latent_dim="${LATENT_DIM:-32}"
+         --environment.command.tracking_clip_latent_replaces_reference="${LATENT_REPLACES:-False}"
+         --environment.command.tracking_clip_latent_scope="${LATENT_SCOPE:-per_joint}"
+         --environment.command.tracking_clip_latent_obs_divisor="${LATENT_DIVISOR:-1.0}"
+         --environment.command.tracking_clip_latent_sidecar_suffix="${SIDECAR:-_zq}"
          --environment.domain_randomization.initial_state.type=reference
          --environment.domain_randomization.seen_robot.morphology_coeff_mode="${MORPH_MODE:-schedule}"
          --environment.domain_randomization.seen_robot.morphology_coeff_value="${MORPH_COEFF:-0.7}"
@@ -206,7 +224,7 @@ echo "=== RESOLVED CONFIG FLAGS (danceproof Check 27) ==="
 printf '  %s
 ' "${WORLD[@]}"
 echo "=== ARM ENV AS EXPORTED ==="
-for v in CLIP_FILE VELCMD CYCLIC AMPSCALE VELSCALE REFVEL_OBS REFROOT REFBIAS          TRACK_COEFF TRACK_TEMP DEVRATIO TRACK_DEVIATION MORPH_MODE MORPH_COEFF CURMAX          FITVARIANT ANCHOR GAITMODE GAITCOEFF QVEL_TEMP HEADING_RATIO HEADING_TEMP NOMINAL_TARGET ROBOTS_LIST POSTCONTACT FOOTSLIP GROUNDPEN FOOTZVEL FOOTH FOOTH_TEMP LATENT_HOLD CONTACT_TIMECONST REFROOT_FLOOR; do
+for v in CLIP_FILE VELCMD CYCLIC AMPSCALE VELSCALE REFVEL_OBS REFROOT REFBIAS          TRACK_COEFF TRACK_TEMP DEVRATIO TRACK_DEVIATION MORPH_MODE MORPH_COEFF CURMAX          FITVARIANT ANCHOR GAITMODE GAITCOEFF QVEL_TEMP HEADING_RATIO HEADING_TEMP NOMINAL_TARGET ROBOTS_LIST POSTCONTACT FOOTSLIP GROUNDPEN FOOTZVEL FOOTH FOOTH_TEMP JLAT_CH LEGW AUX_COEFF AUX_HORIZON AUX_DETACH SIDECAR COTRAIN_ROWS COTRAIN_CH COTRAIN_RECON COTRAIN_FREEZE COTRAIN_INIT LATENT_HOLD LATENT_OBS LATENT_DIM LATENT_REPLACES LATENT_SCOPE LATENT_DIVISOR JLAT_ENC_DIM CONTACT_TIMECONST REFROOT_FLOOR; do
   echo "  $v=${!v:-<UNSET, sbatch default applies>}"
 done
 echo "=== END CONFIG ==="
@@ -239,6 +257,16 @@ python experiment.py \
   --algorithm.nr_steps="$NR_STEPS" \
   --algorithm.minibatch_size="${MINIBATCH:-8192}" \
   --algorithm.nr_epochs=5 \
+  --algorithm.joint_latent_encoder_dim="${JLAT_ENC_DIM:-4}" \
+  --algorithm.joint_latent_channels="${JLAT_CH:-0}" \
+  --algorithm.aux_token_coeff="${AUX_COEFF:-0.0}" \
+  --algorithm.aux_token_horizon="${AUX_HORIZON:-1}" \
+  --algorithm.aux_token_detach_trunk="${AUX_DETACH:-False}" \
+  --algorithm.cotrain_window_rows="${COTRAIN_ROWS:-0}" \
+  --algorithm.cotrain_window_channels="${COTRAIN_CH:-4}" \
+  --algorithm.cotrain_recon_coeff="${COTRAIN_RECON:-1.0}" \
+  --algorithm.cotrain_freeze_encoder="${COTRAIN_FREEZE:-False}" \
+  --algorithm.cotrain_init_encoder="${COTRAIN_INIT:-}" \
   --algorithm.total_timesteps="$TOTAL_STEPS" \
   --algorithm.evaluation_active=False \
   --algorithm.evaluation_and_save_frequency="$SAVE_EVERY" \

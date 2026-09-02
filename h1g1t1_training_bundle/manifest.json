@@ -1,0 +1,79 @@
+{
+  "bundle_name": "h1g1t1_single_policy_training_bundle",
+  "format_version": 1,
+  "generated_for_source_archive": "h1g1t1_pipeline.zip",
+  "overlay_files": [
+    {
+      "mode": "0644",
+      "path": "loco_mjx/loco_mjx/environments/locomotion/urma2/mjx/default_config.py",
+      "sha256": "9d59cb507e6bae662a43139d886e3b7c04e0ede8e4987e725cf9b89bff87d88a"
+    },
+    {
+      "mode": "0644",
+      "path": "loco_mjx/loco_mjx/environments/locomotion/urma2/mjx/reward_functions/tracking.py",
+      "sha256": "215d3c1b8ab894d20f67d5be71861c05193605291838694683317d3fd93b4afb"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/collect_diagnostics.py",
+      "sha256": "4817af76aef9a6bae03caf9ce3aad2623d2e5fb69891e4de33790761201cc975"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/evaluate_policy.py",
+      "sha256": "04ae0a4a3bf25a290af1fa0cb2cab258d923689e2467a286ca794a4a8e29cbfc"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/gpu_monitor.sh",
+      "sha256": "1f88b5796167dc5f130be295ca0c547050035a6149a1300fed00f6ee4896b491"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/parse_training_log.py",
+      "sha256": "4bbf115ee35e625bde80a29e7331e7b161690d04dc37448c13e195c4776164d5"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/plot_training.py",
+      "sha256": "2430d6c0e97dd94ba698995e580a7f7dbf23e5ce6a9ef8960dd5e8a819f937b5"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/preflight.py",
+      "sha256": "4aeb4a1102173346bcaab433292e96de84280d9e39b3f548d5f894286142be2c"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/profiles.py",
+      "sha256": "171a41e8c1e2dc1f181e83bf4d53af579e7f6f5b8818646be4a567e0f366282e"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/run_experiment.sh",
+      "sha256": "3c8d7a52bf0129fdeb50a56c376c5c908897dc2d90b8555eed7502a4413fe5bd"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/summarize_evaluations.py",
+      "sha256": "2da6f3cb4d57abf889d6fe31ca62654a018e04c111d37a49429559287c692ad3"
+    },
+    {
+      "mode": "0755",
+      "path": "scripts/h1g1t1/verify_run.py",
+      "sha256": "5d003f2a92a70006247ece372fc9b74ad03e96c0cdd8780bb9f2e31beaee9e95"
+    }
+  ],
+  "source_requirements": [
+    {
+      "installed_sha256": "9d59cb507e6bae662a43139d886e3b7c04e0ede8e4987e725cf9b89bff87d88a",
+      "path": "loco_mjx/loco_mjx/environments/locomotion/urma2/mjx/default_config.py",
+      "source_sha256": "7000d7d29a307a626b2f1ea9211b84327c329ad7d37049e7bcc6c0155478d365"
+    },
+    {
+      "installed_sha256": "215d3c1b8ab894d20f67d5be71861c05193605291838694683317d3fd93b4afb",
+      "path": "loco_mjx/loco_mjx/environments/locomotion/urma2/mjx/reward_functions/tracking.py",
+      "source_sha256": "baff1b6a18ca5ab44f65c20a57b7ecf33538b29ca79bd26f14889d53d4e2d41e"
+    }
+  ]
+}

@@ -34,6 +34,14 @@ FIGURES = {
     "canon": ("f10_canonical_fails_visibly.png", "The one exception",
         "The shared body-independent stream is the single failure large enough for a training curve to "
         "show. When a curve does separate in this project, it means something has gone very wrong."),
+    "chainsplit": ("f9_chain_split.png", "The legs-vs-arms split is two defects, not one",
+        "Per-joint policy scored against the zero-action floor (red line), in BOTH metric variants. "
+        "The ANKLE passes on the centred metric and fails on the absolute one across all three robots "
+        "&mdash; a postural-offset defect that the DEFAULT per-joint metric deletes by construction, "
+        "driven by a mirrored 36&ndash;40&deg; bias. The HIP fails in both variants on H1 and BoosterT1 "
+        "but sits above the floor on G1, so that half is robot-specific. Seven single-mechanism "
+        "explanations died against &ldquo;legs vs arms&rdquo; because each was fitted to an average of "
+        "these two."),
     "degrade": ("f3_reference_degradation.png", "Take the reference away and watch who copes",
         "The load-bearing experiment. The observed reference is frozen every K clip frames while the "
         "reward target stays fresh &mdash; before this run they shared one array, so the reference could "
@@ -58,6 +66,12 @@ FIGURES = {
         "accuracy improves the whole way &mdash; it is what they are traded for. Turning the foot terms "
         "on lifts the feet back (ratio 0.30 &rarr; 0.54) at a cost of 44 % joint accuracy. The four "
         "heading curves lie on top of each other."),
+    "threetop": ("f12_three_topologies.png", "One policy, three topologies, one motion",
+        "H1 + G1 + booster&nbsp;T1 sharing a single network on <code>dance2_subject4</code>, 19.17M steps at "
+        "576 environments per robot. Episode length reaches 878 of 1000 and all three robots track. Note "
+        "the third panel: t1 sits near 0.8&nbsp;rad for fifteen million steps and then converges sharply, "
+        "so this budget is barely enough for the third body &mdash; a longer run should close most of its "
+        "remaining gap."),
     "headbar": ("f8_heading_across_arms.png", "Sixteen arms, one control, nothing in between",
         "Amber is a policy that emits no torque at all. Everything trained &mdash; every motion count, "
         "both topology counts, fixed and randomized bodies, real token and scrambled &mdash; lands "
@@ -69,6 +83,15 @@ FIGURES = {
 }
 
 VIDEOS = [
+    ("local_3t_unitree_h1.mp4", "local_3t · H1", "H1",
+     "The three-topology policy driving H1. Joint tracking 0.081 rad in training. Left is the policy, "
+     "right the clip at its own root."),
+    ("local_3t_unitree_g1.mp4", "local_3t · G1", "G1",
+     "The <em>same weights</em> driving G1, 23 joints instead of 19, and tracking best of the three at "
+     "0.038 rad."),
+    ("local_3t_booster_t1.mp4", "local_3t · booster T1", "T1",
+     "And the same weights on booster&nbsp;T1, a differently proportioned robot again. 0.120 rad, the "
+     "hardest of the three, and the one that converges last."),
     ("M9_both_h1.mp4", "M9_both", "H1",
      "The best single-body arm, 0.1263 rad. Policy travels 1.13 m against the clip's 1.25 m &mdash; the "
      "closest match of the three."),
@@ -130,6 +153,7 @@ def build() -> str:
             .replace("%%FIG_2X2%%", figs["twobytwo"])
             .replace("%%FIG_DECODER%%", figs["decoder"])
             .replace("%%FIG_HEADBAR%%", figs["headbar"])
+            .replace("%%FIG_3T%%", figs["threetop"])
             .replace("%%FIG_SELLOFF%%", figs["selloff"])
             .replace("%%FIG_LADDER%%", figs["ladder"]))
 
@@ -299,9 +323,13 @@ TEMPLATE = """<title>The Token's Ledger</title>
         drops 40 &rarr; 8 &rarr; 4&nbsp;Hz</td><td class="k">degradation</td></tr>
       <tr><td><b>The body is randomized</b></td>
         <td><b>no effect at all</b> &mdash; &minus;4.0&nbsp;% with and without</td><td class="k">2&times;2</td></tr>
-      <tr><td><b>A second topology is present</b></td>
-        <td>value <b>collapses to zero</b>, on both robots, with and without randomization</td>
-        <td class="k">2&times;2</td></tr>
+      <tr class="hl"><td><b>The robot is H1</b></td>
+        <td>every positive result lives here. On <b>G1 alone</b> the effect is
+        <b>+0.6&nbsp;%, t&nbsp;=&nbsp;0.73</b> &mdash; nothing, with G1 as the only robot in the policy</td>
+        <td class="k">G1 pair</td></tr>
+      <tr><td style="text-decoration:line-through;opacity:.55">A second topology is present</td>
+        <td><b>Struck.</b> The two-topology null was G1's null diluting H1's effect in the average, not a
+        cost of sharing one policy across bodies</td><td class="k">G1 pair</td></tr>
     </tbody></table></div>
   <p class="lede"><b>The rule:</b> the token is worth having when it <em>supplements</em> a reference that is
     slow, stale or unreliable, on a body family it was fitted to. That is a real engineering claim and it
@@ -360,6 +388,47 @@ TEMPLATE = """<title>The Token's Ledger</title>
       <p>Four times the weight buys 10&deg; of heading and costs 18&nbsp;% of joint accuracy, and still sits
       13&times; above the zero-action floor. The term being off was a true fact; the fix that seemed to
       follow from it does not work.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The baseline that works</span>
+  <h2>One network, three robots, one dance</h2>
+  <p class="lede">The result this project had never actually produced. A single policy driving H1 (19
+    joints), G1 (23) and booster&nbsp;T1 (23) through <code>dance2_subject4</code> &mdash; the one clip all
+    three have an offline retarget for.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Robot</th><th class="num">joints</th><th class="num">joint tracking error</th>
+      <th class="num">foot-lift ratio</th><th class="num">heading</th></tr></thead>
+    <tbody>
+      <tr><td class="k">unitree_h1</td><td class="num">19</td><td class="num">0.0807</td>
+        <td class="num">0.72</td><td class="num">89.2&deg;</td></tr>
+      <tr class="hl"><td class="k">unitree_g1</td><td class="num">23</td><td class="num">0.0380</td>
+        <td class="num">0.22</td><td class="num">86.8&deg;</td></tr>
+      <tr><td class="k">booster_t1</td><td class="num">23</td><td class="num">0.1201</td>
+        <td class="num">0.17</td><td class="num">82.4&deg;</td></tr>
+    </tbody></table></div>
+  <p class="lede">Episode length <b>878 of 1000</b>. G1 tracks best inside the shared policy, as it does in
+    every two-topology run here. <b>Read t1's column as a data result, not a policy result:</b> its
+    retargeted clip asks for shoulder and elbow angles <em>outside t1's own joint limits</em> &mdash;
+    <code>Left_Shoulder_Pitch</code> is out of range on <b>81.7&nbsp;%</b> of frames by a mean of
+    1.33&nbsp;rad (76&deg;) &mdash; so the crosseval's reference-vs-clip floor for t1 is 0.32&nbsp;rad
+    against 0.05 for H1 and 0.02 for G1. No controller can close that; the retarget has to. Heading is 82&ndash;89&deg; because this run carries the recipe defect
+    described below &mdash; the foot terms are switched on, the heading term is not, since three attempts
+    have shown it does nothing but cost joint accuracy.</p>
+  %%FIG_3T%%
+  <div class="card">
+    <h3>It had to run on a laptop GPU, and that is the interesting part</h3>
+    <p class="lede">Thirteen configurations of this run were tried on the cluster &mdash; three env counts,
+      three minibatches, the command buffer on and off, sequential and parallel compilation, two different
+      algorithms, and both robot orderings. <strong>Every one aborted at zero steps</strong> with
+      <code>ROCM_ERROR_ILLEGAL_ADDRESS</code>. One- and two-topology runs are fine; three is not. The
+      <code>mjx_warp</code> backend would sidestep it but only sees a CPU there, the machines being AMD
+      APUs with no CUDA driver.</p>
+    <p class="lede" style="margin-top:12px">On CUDA the same configuration compiled and trained without
+      incident. So the topology ceiling this project has worked around for weeks is a property of one
+      vendor's compiler stack, not of the method &mdash; and a 16&nbsp;GB desktop card was enough to show
+      it, using 5.2&nbsp;GB.</p>
   </div>
 </section>
 

@@ -133,13 +133,33 @@ def cmd_build(args):
     # Windows are built PER CLIP and then concatenated, so lookahead clamping
     # stays clip-local and no window straddles a clip boundary.
     clips = list(args.clip)
+
+    # Retargets disagree on length: H1/G1/H1v2 carry 9025 frames of
+    # dance2_subject4, BoosterT1/Atlas/Talos carry 9023. The source robot is the
+    # LONGEST, so the bundle length has to be the common MINIMUM over every
+    # robot including the source -- clipping only the targets would leave the
+    # features two frames longer than what they are scored against. Clips are
+    # frame-aligned from frame 0, so a head-truncation is exact.
+    common_len = []
+    for clip in clips:
+        lens = []
+        for rb in [args.source_robot] + list(args.robots):
+            q = np.load(Path(args.clip_dir) / rb / clip, allow_pickle=True)["qpos"]
+            lens.append(int(np.asarray(q).shape[0]))
+        n = min(lens)
+        if max(lens) != n:
+            print(f"[bundle] {clip}: lengths {sorted(set(lens))} -> truncating all to {n}",
+                  flush=True)
+        common_len.append(n)
+
     fwins, frames_per_clip = [], []
     feature_dim = None
-    for clip in clips:
+    for ci, clip in enumerate(clips):
         src = np.load(Path(args.clip_dir) / args.source_robot / clip, allow_pickle=True)
         features = canonical_features_from_npz(
             src, include_source_joints=args.include_source_joints,
             sites=SITE_SETS[args.sites])
+        features = features[:common_len[ci]]
         feature_dim = int(features.shape[1])
         frames_per_clip.append(int(features.shape[0]))
         fwins.append(feature_windows(features, args.lookahead))
@@ -158,14 +178,33 @@ def cmd_build(args):
         "robots": args.robots,
         "frames": int(fwin.shape[0]),
     }
+    # Viper carries only the shim loco_mujoco, so build_robot_assets() (which
+    # needs the real task_factories) cannot run there. The 47-dim descriptor
+    # depends only on the nominal model, so a cache generated on a box with the
+    # full stack is exact, not an approximation -- the same trick the per-joint
+    # path already uses via --desc-cache.
+    desc_store = np.load(args.desc_cache, allow_pickle=True) if args.desc_cache else None
     for robot in args.robots:
-        desc, joint_names = build_robot_assets(robot)
+        if desc_store is not None and f"{robot}_desc" in desc_store:
+            desc = desc_store[f"{robot}_desc"]
+            joint_names = [str(n) for n in desc_store[f"{robot}_joints"]]
+        else:
+            desc, joint_names = build_robot_assets(robot)
         targets = []
         for ci, clip in enumerate(clips):
             qpos, qvel, _ = load_clip_joints(Path(args.clip_dir) / robot / clip, joint_names)
-            if qpos.shape[0] != frames_per_clip[ci]:
+            # Retargets do not agree on length: H1/G1/H1v2 carry 9025 frames of
+            # dance2_subject4 while BoosterT1/Atlas/Talos carry 9023. Requiring
+            # equality killed every bundle past two robots. Truncating to the
+            # source length is safe (the clips are frame-aligned from frame 0),
+            # but a LONGER source is not -- that would mean missing motion.
+            n_src = frames_per_clip[ci]
+            if qpos.shape[0] < n_src:
                 raise ValueError(
-                    f"{robot} {clip} frame count {qpos.shape[0]} != source {frames_per_clip[ci]}")
+                    f"{robot} {clip} has {qpos.shape[0]} frames but the bundle "
+                    f"length is {n_src}; the common-minimum pass above should "
+                    f"have made this impossible")
+            qpos, qvel = qpos[:n_src], qvel[:n_src]
             targets.append(build_windows(qpos, qvel, args.lookahead).astype(np.float32))
         data[f"{robot}_targets"] = np.concatenate(targets, axis=0)
         data[f"{robot}_desc"] = desc
@@ -175,9 +214,26 @@ def cmd_build(args):
 
     vendor = out / "nn_vendor"
     vendor.mkdir(exist_ok=True)
-    nn_src = WORKSPACE / "loco-mujoco" / "loco_mujoco" / "algorithms" / "autoencoder" / "nn"
+    # Vendor source: prefer the real loco-mujoco checkout, fall back to the
+    # shim that Viper carries instead of it. The hardcoded checkout path failed
+    # every bundle build on Viper, where only tools/shim exists. decoder_v2.py
+    # is copied when present so a bundle can be trained with either decoder.
+    candidates = [
+        WORKSPACE / "loco-mujoco" / "loco_mujoco" / "algorithms" / "autoencoder" / "nn",
+        Path(__file__).resolve().parent.parent / "shim" / "loco_mujoco"
+        / "algorithms" / "autoencoder" / "nn",
+        Path("/ptmp/akalenik/urma/tools/shim/loco_mujoco/algorithms/autoencoder/nn"),
+    ]
+    nn_src = next((c for c in candidates if (c / "decoder.py").exists()), None)
+    if nn_src is None:
+        raise FileNotFoundError(
+            "no nn/ source for nn_vendor; tried: "
+            + " | ".join(str(c) for c in candidates))
+    print(f'[bundle] vendoring nn from {nn_src}', flush=True)
     for f in ("decoder.py", "fsq.py", "scaled_width.py"):
         shutil.copy2(nn_src / f, vendor / f)
+    if (nn_src / "decoder_v2.py").exists():
+        shutil.copy2(nn_src / "decoder_v2.py", vendor / "decoder_v2.py")
     (vendor / "__init__.py").write_text("")
     shutil.copy2(Path(__file__), out / "canonical_fsq_clip.py")
     print(f"bundle ready: {out} (dataset {fwin.shape}, robots {args.robots})")
@@ -188,11 +244,24 @@ def cmd_build(args):
 # ---------------------------------------------------------------------------
 
 
-def make_model(bundle_dir: Path, levels, latent_dim, lookahead, width):
+def make_model(bundle_dir: Path, levels, latent_dim, lookahead, width, decoder="v1"):
     import flax.linen as nn
 
     sys.path.insert(0, str(bundle_dir))
-    from nn_vendor.decoder import URMADecoder
+    # A7: the canonical decoder is swappable. v1 is the URMA joint-softmax mask
+    # that section 6 of REPORT_FSQ_WAVE2 fingered as the canonical wall; v2 is
+    # Kevin's rewrite (autoencoder branch 8f04ee8/7a7fb1e), which replaces the
+    # mask with a descriptor concatenation and takes the SAME (B, njnt, latent)
+    # input -- so our one-code broadcast feeds it unchanged.
+    #
+    # Only the DECODER is swappable here, deliberately. The canonical encoder
+    # below flattens the lookahead window; it never had the jnp.mean pooling
+    # defect that Kevin's per-joint encoder had, so there is no v2 encoder to
+    # test on this path.
+    if decoder == "v2":
+        from nn_vendor.decoder_v2 import URMADecoder
+    else:
+        from nn_vendor.decoder import URMADecoder
     from nn_vendor.fsq import FSQ
 
     class CanonicalMotionAutoencoder(nn.Module):
@@ -238,6 +307,11 @@ def make_model(bundle_dir: Path, levels, latent_dim, lookahead, width):
         levels=tuple(levels), latent_dim=latent_dim, lookahead=lookahead, width=width)
 
 
+def _decoder_choice():
+    import os
+    return os.environ.get("FSQ_DEC", "v1").lower()
+
+
 # ---------------------------------------------------------------------------
 # train (portable: jax + flax + optax + numpy only)
 # ---------------------------------------------------------------------------
@@ -269,7 +343,10 @@ def cmd_train(args):
     # scaling it is a first-class experiment, not a tweak.
     levels = tuple(args.levels) if args.levels else DEFAULT_LEVELS[: args.latent_dim]
     latent_dim = len(levels)
-    model = make_model(bundle, levels, latent_dim, lookahead, args.width)
+    dec_choice = _decoder_choice()
+    model = make_model(bundle, levels, latent_dim, lookahead, args.width,
+                       decoder=dec_choice)
+    print(f'[canonical] decoder={dec_choice}', flush=True)
 
     rng = jax.random.PRNGKey(args.seed)
     r0 = robots[0]
@@ -333,6 +410,7 @@ def cmd_train(args):
         "lookahead": lookahead, "width": args.width, "epochs": args.epochs,
         "batch_size": args.batch_size, "lr": args.lr, "seed": args.seed,
         "test_fraction": args.test_fraction,
+        "decoder": dec_choice,
         "final_train_loss": history["train_loss"][-1],
         "final_eval_loss": {r: history["eval_loss"][r][-1] for r in robots},
     }, indent=2))
@@ -364,7 +442,8 @@ def cmd_reconstruct(args):
     T = features_n.shape[0]
 
     model = make_model(bundle, tuple(config["levels"]), config["latent_dim"],
-                       lookahead, config["width"])
+                       lookahead, config["width"],
+                       decoder=config.get("decoder", "v1"))
     r0 = robots[0]
     params = flax.serialization.from_bytes(
         model.init(jax.random.PRNGKey(0), jnp.asarray(features_n[:2]),
@@ -391,30 +470,65 @@ def cmd_reconstruct(args):
         zq_all = np.concatenate(zq_rows, axis=0)  # identical across robots
 
         from scaling.khaendler_fsq_clip import load_clip_joints
-        src = Path(meta["clip_dir"]) / robot / meta["clip"]
-        qpos, qvel, perm = load_clip_joints(src, joint_names)
+        # A multi-clip bundle stores meta["clips"] as a LIST; meta["clip"] is a
+        # comma-joined label, not a filename. Reading the label opened a path
+        # like "a.npz,b.npz" and killed every motion-count bundle. Rebuild the
+        # concatenated target the same way cmd_build did, and write the
+        # reconstruction back per clip.
+        clip_list = meta.get("clips") or [meta["clip"]]
+        n_src = meta.get("frames_per_clip") or [None] * len(clip_list)
+        qpos_parts, qvel_parts, perm = [], [], None
+        for ci, clip_name in enumerate(clip_list):
+            s = Path(meta["clip_dir"]) / robot / clip_name
+            qp, qv, perm = load_clip_joints(s, joint_names)
+            if n_src[ci] is not None and qp.shape[0] > n_src[ci]:
+                qp, qv = qp[:n_src[ci]], qv[:n_src[ci]]
+            qpos_parts.append(qp); qvel_parts.append(qv)
+        qpos = np.concatenate(qpos_parts, axis=0)
+        qvel = np.concatenate(qvel_parts, axis=0)
         rec_qpos, rec_qvel = rec[..., 0], rec[..., 1]
         inv = np.argsort(perm)
 
-        d = dict(np.load(src, allow_pickle=True))
-        new_qpos = np.array(d["qpos"]); new_qpos[:, 7:] = rec_qpos[:, inv]
-        new_qvel = np.array(d["qvel"]); new_qvel[:, 6:] = rec_qvel[:, inv]
-        d["qpos"] = new_qpos.astype(np.float32)
-        d["qvel"] = new_qvel.astype(np.float32)
         out_robot = dst_dir / robot
         out_robot.mkdir(parents=True, exist_ok=True)
-        np.savez(out_robot / meta["clip"], **d)
+        off = 0
+        for ci, clip_name in enumerate(clip_list):
+            n = qpos_parts[ci].shape[0]
+            s = Path(meta["clip_dir"]) / robot / clip_name
+            d = dict(np.load(s, allow_pickle=True))
+            nq = np.array(d["qpos"])[:n]; nq[:, 7:] = rec_qpos[off:off + n][:, inv]
+            nv = np.array(d["qvel"])[:n]; nv[:, 6:] = rec_qvel[off:off + n][:, inv]
+            d["qpos"] = nq.astype(np.float32); d["qvel"] = nv.astype(np.float32)
+            np.savez(out_robot / clip_name, **d)
+            off += n
 
+        # T is the scored length: the concatenated clips, clipped to whatever the
+        # model actually produced (windows are built per clip, so the two agree).
+        T = min(rec_qpos.shape[0], qpos.shape[0])
+        rec_qpos, qpos = rec_qpos[:T], qpos[:T]
+        rec_qvel, qvel = rec_qvel[:T], qvel[:T]
         err = rec_qpos - qpos
+        # The reconstruction loop above scores EVERY frame, so qpos_rmse_rad is
+        # ~90% training data at the default --test-fraction 0.1. Every canonical
+        # number reported before 2026-08-27 was that contaminated figure, and it
+        # ranked the width sweep backwards: width helped on train and hurt on
+        # held-out. The gate is qpos_rmse_rad_heldout; the mixed figure is kept
+        # only so old reports stay comparable.
+        n_test = max(1, int(T * float(config.get("test_fraction", 0.1))))
+        held = slice(max(1, T - n_test), T)
+        err_h = err[held]
         report[robot] = {
             "frames": int(T),
+            "heldout_frames": int(err_h.shape[0]),
+            "qpos_rmse_rad_heldout": float(np.sqrt(np.mean(err_h ** 2))),
             "qpos_rmse_rad": float(np.sqrt(np.mean(err ** 2))),
             "qpos_max_abs_err_rad": float(np.max(np.abs(err))),
             "per_joint_rmse_rad": {joint_names[j]: float(np.sqrt(np.mean(err[:, j] ** 2)))
                                    for j in range(len(joint_names))},
             "qvel_rmse": float(np.sqrt(np.mean((rec_qvel - qvel) ** 2))),
         }
-        print(f"{robot}: qpos RMSE {report[robot]['qpos_rmse_rad']:.4f} rad, "
+        print(f"{robot}: qpos RMSE heldout {report[robot]['qpos_rmse_rad_heldout']:.4f} "
+              f"(mixed {report[robot]['qpos_rmse_rad']:.4f}) rad, "
               f"max {report[robot]['qpos_max_abs_err_rad']:.4f} rad")
 
     report["unique_codes_used"] = int(np.unique(zq_all, axis=0).shape[0])
@@ -449,6 +563,9 @@ def main():
                         "feet and two hands (the 22-dim design that reconstructs "
                         "at 0.37 rad); rich14 adds hips, knees, shoulders, elbows, "
                         "chest and head -- the joints ee4 cannot see.")
+    b.add_argument("--desc-cache", default=None,
+                   help="npz of cached <robot>_desc/<robot>_joints; lets a box "
+                        "without the full loco-mujoco stack build a bundle.")
     b.add_argument("--out", required=True)
     b.set_defaults(fn=cmd_build)
 
