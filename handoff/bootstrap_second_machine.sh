@@ -29,7 +29,10 @@ git -C RL-X fetch ../handoff/rlx_local.bundle HEAD && git -C RL-X checkout -q -B
 for m in loco_mjx loco-mujoco RL-X; do echo "$m -> $(git -C $m rev-parse --short HEAD) $(git -C $m log -1 --format=%s | cut -c1-70)"; done
 
 # 3. venvs (python 3.12; jax 0.7.1 + CUDA 12 plugin; mujoco 3.7.0)
-sudo apt-get install -y -q python3.12 python3.12-venv python3.12-dev ffmpeg libegl1 libgl1 >/dev/null
+#    Native Ubuntu works the same as WSL. Ubuntu 22.04 ships 3.10: add
+#    `sudo add-apt-repository ppa:deadsnakes/ppa` first, or use a conda/uv
+#    python 3.12 and replace python3.12 below.
+sudo apt-get install -y -q python3.12 python3.12-venv python3.12-dev ffmpeg libegl1 libgl1 >/dev/null || echo "install python3.12 yourself (deadsnakes / conda) and rerun"
 python3.12 -m venv ~/jaxgpu
 ~/jaxgpu/bin/pip install -q --upgrade pip
 ~/jaxgpu/bin/pip install -q -r handoff/requirements_jaxgpu.txt
