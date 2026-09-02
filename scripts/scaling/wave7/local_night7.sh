@@ -24,7 +24,7 @@ log "waiting for the tokenizer pipeline"
 for i in $(seq 1 720); do grep -q "TOKENIZER PIPELINE DONE" "$TOKLOG" 2>/dev/null && break; sleep 30; done
 
 log "=== 3-robot co-training smoke (clips_3t_v2, tokenizer_3t_v2 init) ==="
-env NAME=w7smoke_cot3 CLIPDIR="$C3" ROBOTS=unitree_h1:unitree_g1:booster_t1 NR_ENVS=96 MINIBATCH=2048 TOTAL=61440 SAVE_EVERY=61440 \
+env NAME=w7smoke_cot3 CLIPDIR="$C3" ROBOTS=unitree_h1:unitree_g1:booster_t1 NR_ENVS=96 MINIBATCH=1536 TOTAL=61440 SAVE_EVERY=61440 \
     $COTV COTRAIN_INIT="$TOK2" PROJECT=local_w7 bash "$W6/local_train.sh" > "$OUT/smoke_cot3.log" 2>&1
 log "smoke rc=$? steps=$(grep -c nr_env_steps "$OUT/smoke_cot3.log")"
 grep -m1 -E "Traceback|Error" "$OUT/smoke_cot3.log" | cut -c1-200
