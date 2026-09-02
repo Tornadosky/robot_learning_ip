@@ -44,6 +44,24 @@ arm() {  # <name> <env...>
   local steps; steps=$(grep -o "nr_env_steps[^0-9]*[0-9]\+" "$OUT/$name.log" | grep -o "[0-9]\+$" | tail -1)
   log "END $name rc=$? steps=${steps:-0}"; [ "${steps:-0}" -ge 58982400 ] && touch "$OUT/$name.done"
 }
-arm w7_cot5 $COTV COTRAIN_INIT="$TOK"
-arm w7_ref5 LATENT=0
+# try the full robot list; on a failed start (OOM / compile fault: rc!=0 and no steps)
+# fall back to 4 robots (drop Apollo), then 3 (H1+G1+T1)
+run_with_fallback() {  # <name> <env...>
+  local name=$1; shift
+  local full="$R5"
+  for cand in "$full" "$(echo "$full" | sed 's/:apptronik_apollo//')" "unitree_h1:unitree_g1:booster_t1"; do
+    R5=$cand; NR=$(echo "$R5" | tr ":" "
+" | wc -l); ENVS=$((64*NR)); MB=$((1024*NR))
+    arm "$name" "$@"
+    if [ -f "$OUT/$name.done" ]; then return 0; fi
+    local steps; steps=$(grep -o "nr_env_steps[^0-9]*[0-9]\+" "$OUT/$name.log" | grep -o "[0-9]\+$" | tail -1)
+    if [ "${steps:-0}" -gt 0 ]; then log "$name stopped mid-run with $R5 (resume by relaunching)"; return 1; fi
+    log "$name failed to start with $R5: $(grep -m1 -E 'RESOURCE_EXHAUSTED|OOM|Traceback|Error' "$OUT/$name.log" | cut -c1-120) -> fewer robots"
+    mv "$OUT/$name.log" "$OUT/$name.failed_$(echo $cand | tr ':' '_').log"
+  done
+  return 1
+}
+run_with_fallback w7_cot5 $COTV COTRAIN_INIT="$TOK"
+R5=$(cat "$C5/ROBOTS")
+run_with_fallback w7_ref5 LATENT=0
 log "=== NIGHT7 DONE ==="
