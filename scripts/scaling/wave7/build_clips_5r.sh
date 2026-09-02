@@ -19,9 +19,12 @@ TOK=experiments/fsq_khaendler/tokenizer_m20
 log() { echo "[5r $(date '+%m-%d %H:%M:%S')] $*"; }
 if [ "${WAIT:-1}" = 1 ]; then
   log "waiting for tokenizer + Atlas/Apollo re-issue"
+  # done = tokenizer finished AND the re-issue has produced Atlas+Apollo output AND no reissue process is alive
   for i in $(seq 1 1440); do
-    t=$(grep -c "TOKENIZER PIPELINE DONE" $L/tokenizer_m20.log 2>/dev/null); a=$(grep -c "^OK\|^!!" $L/reissue_aa_all.log 2>/dev/null)
-    [ "${t:-0}" -ge 1 ] && [ "${a:-0}" -ge 68 ] && break; sleep 60
+    t=$(grep -c "TOKENIZER PIPELINE DONE" $L/tokenizer_m20.log 2>/dev/null)
+    a=$(grep -c "^OK Apollo\|^!! Apollo" $L/reissue_aa_all.log 2>/dev/null)
+    alive=$(powershell.exe -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -like '*reissue_clips*' }).Count" 2>/dev/null | tr -dc '0-9')
+    [ "${t:-0}" -ge 1 ] && [ "${a:-0}" -ge 1 ] && [ "${alive:-1}" = "0" ] && break; sleep 60
   done
 fi
 TR=$(sed 's/$/.npz/' $M20/train_motions.txt | tr '\n' ' ')
