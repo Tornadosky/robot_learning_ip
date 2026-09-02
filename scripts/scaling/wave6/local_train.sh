@@ -22,6 +22,7 @@ JLAT_CH=${JLAT_CH:-0}; LATENT_DIM=${LATENT_DIM:-32}; LATENT_DIVISOR=${LATENT_DIV
 COTRAIN_ROWS=${COTRAIN_ROWS:-0}; COTRAIN_CH=${COTRAIN_CH:-4}; COTRAIN_RECON=${COTRAIN_RECON:-1.0}
 COTRAIN_FREEZE=${COTRAIN_FREEZE:-False}; COTRAIN_INIT=${COTRAIN_INIT:-}
 MORPH_MODE=${MORPH_MODE:-fixed}; MORPH_COEFF=${MORPH_COEFF:-0.0}
+MORPH_START=${MORPH_START:-0.2}; MORPH_RAMP=${MORPH_RAMP:-40000000}   # schedule mode only (same defaults as viper_train.sbatch)
 PROJECT=${PROJECT:-local_w6}
 CLIP=${CLIP:-dance2_subject4.npz}
 
@@ -37,7 +38,7 @@ export XLA_FLAGS=--xla_gpu_enable_command_buffer=
 export JAX_ENABLE_COMPILATION_CACHE=true
 export JAX_COMPILATION_CACHE_DIR=$REPO/.jax_cache_local
 
-echo "=== local_train $NAME robots=$TR clipdir=$CLIPDIR latent=$LOBS replaces=$REPLACES hold=$HOLD envs=$NR_ENVS total=$TOTAL aux=$AUX_COEFF/$AUX_HORIZON/$AUX_DETACH legw=$LEGW cotrain=$COTRAIN_ROWS/$COTRAIN_CH/$COTRAIN_RECON/$COTRAIN_FREEZE/[$COTRAIN_INIT] sidecar=$SIDECAR dim=$LATENT_DIM div=$LATENT_DIVISOR seed=$SEED morph=$MORPH_MODE/$MORPH_COEFF extra=[$EXTRA] $(date -Is)"
+echo "=== local_train $NAME robots=$TR clipdir=$CLIPDIR latent=$LOBS replaces=$REPLACES hold=$HOLD envs=$NR_ENVS total=$TOTAL aux=$AUX_COEFF/$AUX_HORIZON/$AUX_DETACH legw=$LEGW cotrain=$COTRAIN_ROWS/$COTRAIN_CH/$COTRAIN_RECON/$COTRAIN_FREEZE/[$COTRAIN_INIT] sidecar=$SIDECAR dim=$LATENT_DIM div=$LATENT_DIVISOR seed=$SEED morph=$MORPH_MODE/$MORPH_COEFF/$MORPH_START/$MORPH_RAMP extra=[$EXTRA] $(date -Is)"
 exec $PY experiment.py \
   --environment.name=locomotion.urma2.mjx --algorithm.name=urma2.mjx \
   --environment.train_robots="$TR" \
@@ -89,6 +90,8 @@ exec $PY experiment.py \
   --environment.domain_randomization.initial_state.type=reference \
   --environment.domain_randomization.seen_robot.morphology_coeff_mode="$MORPH_MODE" \
   --environment.domain_randomization.seen_robot.morphology_coeff_value="$MORPH_COEFF" \
+  --environment.domain_randomization.seen_robot.morphology_coeff_start="$MORPH_START" \
+  --environment.domain_randomization.seen_robot.morphology_coeff_ramp_steps="$MORPH_RAMP" \
   --environment.env_curriculum_coeff_max=0.6 \
   --environment.env_curriculum_level_success_tracking_ratio=0.0 \
   --environment.nr_envs="$NR_ENVS" \

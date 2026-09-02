@@ -75,31 +75,44 @@ Robot screening (`scripts/scaling/wave7/screen_family.py`): Atlas residual 0.000
 
 ## 3. BOX-B (Ubuntu, RTX 5080): exactly what to do
 
-**Preferred transfer: ssh/rsync over the LAN (the user provides ssh access; no zips).** From BOX-A (WSL):
-```
-B=user@<box-b-ip>; D=/home/<user>/robot_learning_ip     # fill in
-rsync -a --info=progress2 experiments/fsq_khaendler/{clips_m20,clips_5r,tokenizer_m20,tokenizer_3t_v2,clips_3t_v2} $B:$D/experiments/fsq_khaendler/
-rsync -a external_data/amass_converted/{LAFAN1_all,LAFAN1_allfix} $B:$D/external_data/amass_converted/    # raw clips for evals / retargets (7.5 GB)
-rsync -a handoff/ $B:$D/handoff/
-```
-Then on BOX-B: clone + `bash handoff/bootstrap_second_machine.sh $D` (or, if the repo is already cloned, just `git pull` and re-run the submodule bundle step). Every launcher takes `REPO=$D PY=~/jaxgpu/bin/python`.
+**BOX-B is set up (2026-09-02 21:40): `melo@192.168.178.41` (hostname melody-pc), repo at
+`/home/melo/Projects/ip_project/robot_learning_ip`, key login from BOX-A's WSL.** The password is
+not stored anywhere in this repo; ask the user if the key stops working.
 
+Transfer is ssh/rsync over the LAN (~105 MB/s), from BOX-A (WSL), resumable:
 ```
-git clone --depth 1 https://github.com/Tornadosky/robot_learning_ip.git && cd robot_learning_ip
-bash handoff/bootstrap_second_machine.sh $PWD          # venvs from bundles + requirements
-# data: download handoff_zips/w7_train_data.zip from the drive, unzip into experiments/fsq_khaendler/
-#       (it contains clips_m20, clips_5r, tokenizer_m20, tokenizer_3t_v2, clips_3t_v2)
-#       also copy external_data/amass_converted/LAFAN1_all (for evals against raw clips) or set --raw_clip_dir to the clip dir
+bash scripts/scaling/wave7/sync_boxb.sh      # clips_m20, clips_5r, tokenizers, clips_3t_v2, LAFAN1_all(+fix), handoff/
+```
+Setup that already ran on BOX-B: `git clone --depth 1` + `bash handoff/bootstrap_second_machine.sh <repo>`
+(submodules from the bundles; venvs `~/jaxgpu` and `~/locomjx` installed with `pip --no-deps` from the
+requirement freezes because the working set has known inconsistencies: equinox/lineax/mujoco-warp pins).
+Every launcher takes `REPO=/home/melo/Projects/ip_project/robot_learning_ip PY=~/jaxgpu/bin/python`
+(those are the defaults in `boxb_night7.sh`).
+
+Overnight orchestrator on BOX-B (one JAX process at a time; done arms skipped; relaunch to resume):
+```
+ssh melo@192.168.178.41
+cd /home/melo/Projects/ip_project/robot_learning_ip && git pull
+nohup bash scripts/scaling/wave7/boxb_night7.sh > experiments/local_w7/boxb_night7.log 2>&1 &
+#  1. b7smoke_cot3  3-robot co-training smoke (clips_3t_v2, 10 updates)
+#  2. J7 w7_ref5    5-robot reference arm, 59M, bodies 0.2->0.7 over 40M   (pair of BOX-A's w7_cot5)
+#  3. w7_cot5_h20   5-robot co-trained arm at reference hold 20
+#  4. w7_ref5_h20   5-robot reference arm at hold 20
+# each arm falls back 5 -> 4 (drop Apollo) -> 3 robots if it cannot start (OOM / compile fault)
+tail -f experiments/local_w7/boxb_night7.log      # arms: experiments/local_w7/<name>.log, checkpoints under loco_mjx/experiments/runs/local_w7/
+```
+Manual single arm (what the orchestrator runs for J7):
+```
 export REPO=$PWD PY=~/jaxgpu/bin/python
-# J7: 5-robot reference arm (robots from clips_5r/ROBOTS; 64 envs per robot; minibatch 1024 per robot)
-R=$(cat experiments/fsq_khaendler/clips_5r/ROBOTS); N=$(echo $R | tr ':' '\n' | wc -l)
-NAME=w7_ref5 CLIPDIR=$REPO/experiments/fsq_khaendler/clips_5r CLIP=super20.npz ROBOTS=$R NR_ENVS=$((64*N)) MINIBATCH=$((1024*N)) \
-  TOTAL=58982400 SAVE_EVERY=1966080 MORPH_MODE=schedule MORPH_COEFF=0.7 MORPH_START=0.2 MORPH_RAMP=40000000 LATENT=0 PROJECT=local_w7 \
-  bash scripts/scaling/wave6/local_train.sh
-# then (tomorrow) the hold-20 5-robot pair: add HOLD=20; co-trained variant: LATENT=1 LATENT_DIM=44 LATENT_DIVISOR=1.0 SIDECAR=_win
-#   COTRAIN_ROWS=11 COTRAIN_CH=4 COTRAIN_INIT=$REPO/experiments/fsq_khaendler/tokenizer_m20/params.msgpack
-# D1 needs external_data/smpl (591 MB) + external_data/amass/DanceDB (680 MB) + the Windows-style .venv with torch CUDA; easier on BOX-A after the reboot.
+R=$(cat experiments/fsq_khaendler/clips_5r/ROBOTS); N=$(echo $R | tr ':' '
+' | wc -l)
+NAME=w7_ref5 CLIPDIR=$REPO/experiments/fsq_khaendler/clips_5r CLIP=super20.npz ROBOTS=$R NR_ENVS=$((64*N)) MINIBATCH=$((1024*N))   TOTAL=58982400 SAVE_EVERY=1966080 MORPH_MODE=schedule MORPH_COEFF=0.7 MORPH_START=0.2 MORPH_RAMP=40000000 LATENT=0 PROJECT=local_w7   bash scripts/scaling/wave6/local_train.sh
+# co-trained variant: LATENT=1 LATENT_DIM=44 LATENT_DIVISOR=1.0 SIDECAR=_win COTRAIN_ROWS=11 COTRAIN_CH=4
+#   COTRAIN_INIT=$REPO/experiments/fsq_khaendler/tokenizer_m20/params.msgpack ; hold-20: add HOLD=20
 ```
+Fixed 2026-09-02 21:45: `local_train.sh` never passed `morphology_coeff_start/ramp_steps`, so every
+local `MORPH_MODE=schedule` arm would have died at start with "schedule requires ramp_steps > 0"
+(the fallback would then have burnt all three robot sets). Viper's sbatch always passed them.
 If the 5-robot graph does not fit in 16 GB, drop `apptronik_apollo` from `ROBOTS` (then `atlas`); `local_night7.sh` does that automatically on BOX-A.
 
 ## 4. BOX-A after the reboot (one command)
