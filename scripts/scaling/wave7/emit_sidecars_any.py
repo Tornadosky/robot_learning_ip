@@ -19,6 +19,7 @@ import numpy as np
 R = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(R / "scripts/scaling"))
 sys.path.insert(0, str(R / "loco_mjx"))
+sys.path.insert(0, str(R / "RL-X"))
 from khaendler_fsq_clip import build_windows, load_clip_feet  # noqa: E402
 
 ROBOT_DIR = {"unitree_h1": "UnitreeH1", "unitree_g1": "UnitreeG1", "booster_t1": "BoosterT1",

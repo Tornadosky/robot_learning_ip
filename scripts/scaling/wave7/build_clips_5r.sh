@@ -44,10 +44,13 @@ declare -A MAP=([UnitreeH1]=unitree_h1 [UnitreeG1]=unitree_g1 [BoosterT1]=booste
 NEW=""; for r in $ROBOTS; do case $r in BoosterT1|Atlas|Apollo) NEW="$NEW ${MAP[$r]}";; esac; done
 if [ -n "$NEW" ]; then
   log "sidecars for:$NEW"
-  JAX_PLATFORMS=cpu PYTHONPATH=$REPO:$REPO/loco_mjx $PY scripts/scaling/wave7/emit_sidecars_any.py --tokenizer $TOK --clip-dir $OUT --robots $NEW --clip super20.npz $HO 2>&1 | grep -v pygame
+  JAX_PLATFORMS=cpu PYTHONPATH=$REPO:$REPO/loco_mjx:$REPO/RL-X $PY scripts/scaling/wave7/emit_sidecars_any.py --tokenizer $TOK --clip-dir $OUT --robots $NEW --clip super20.npz $HO 2>&1 | grep -v pygame
 fi
 echo $(for r in $ROBOTS; do echo -n "${MAP[$r]}:"; done | sed 's/:$//') > $OUT/ROBOTS
 ls $OUT/*/ | head -40; du -sh $OUT
+for r in $ROBOTS; do
+  n=$(ls $OUT/$r/*_win.npz 2>/dev/null | wc -l); [ "$n" -ge 8 ] || { log "$r has $n window sidecars (need 8) -> NOT READY"; exit 1; }
+done
 touch $OUT/READY; log "READY robots=$(cat $OUT/ROBOTS)"
 # handoff zips for the second machine (gitignored dir)
 mkdir -p handoff_zips
