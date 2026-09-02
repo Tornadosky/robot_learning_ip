@@ -46,3 +46,18 @@ fi
 echo $(for r in $ROBOTS; do echo -n "${MAP[$r]}:"; done | sed 's/:$//') > $OUT/ROBOTS
 ls $OUT/*/ | head -40; du -sh $OUT
 touch $OUT/READY; log "READY robots=$(cat $OUT/ROBOTS)"
+# handoff zips for the second machine (gitignored dir)
+mkdir -p handoff_zips
+log "zipping training data"
+$PY - <<'PYEOF'
+import zipfile, os
+root = "experiments/fsq_khaendler"
+with zipfile.ZipFile("handoff_zips/w7_train_data.zip", "w", zipfile.ZIP_STORED) as z:
+    for d in ["clips_m20", "clips_5r", "tokenizer_m20", "tokenizer_3t_v2", "clips_3t_v2"]:
+        for dp, _, fs in os.walk(os.path.join(root, d)):
+            for f in fs:
+                p = os.path.join(dp, f); z.write(p, os.path.relpath(p, root))
+print("zip:", os.path.getsize("handoff_zips/w7_train_data.zip") / 1e9, "GB")
+PYEOF
+ls -la handoff_zips/
+log "=== 5R + ZIP DONE ==="
