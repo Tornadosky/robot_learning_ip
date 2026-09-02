@@ -13,11 +13,11 @@
 #      each followed by CEs: dance4 hold 1 x2 seeds, hold 20 x2, zero floor x1
 #   2. the 3-robot hold-20 pair (scripts/scaling/local_h20_3t.sh)
 set -u
-REPO=/mnt/c/Users/smirn/Desktop/robot_learning_ip
+REPO=${REPO:-/mnt/c/Users/smirn/Desktop/robot_learning_ip}
 W6=$REPO/scripts/scaling/wave6
 OUT=$REPO/experiments/local_w6
 EV=$OUT/eval
-PY=~/jaxgpu/bin/python
+PY=${PY:-~/jaxgpu/bin/python}
 C=$REPO/experiments/fsq_khaendler/clips_3t_v2
 RAW=$REPO/external_data/amass_converted/LAFAN1_3t
 TOK=$REPO/experiments/fsq_khaendler/tokenizer_3t_v2/params.msgpack

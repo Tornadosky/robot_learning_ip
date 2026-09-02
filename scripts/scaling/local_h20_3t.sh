@@ -12,8 +12,8 @@
 # Launch: setsid nohup bash scripts/scaling/local_night5.sh \
 #   > experiments/local_3t/ln6h20_run.log 2>&1 < /dev/null &
 set -u
-REPO=/mnt/c/Users/smirn/Desktop/robot_learning_ip
-PY=~/jaxgpu/bin/python
+REPO=${REPO:-/mnt/c/Users/smirn/Desktop/robot_learning_ip}
+PY=${PY:-~/jaxgpu/bin/python}
 MERGED=$REPO/external_data/amass_converted/LAFAN1_3t
 TOKV2=$REPO/experiments/fsq_khaendler/clips_3t_v2
 OUT=$REPO/experiments/local_3t

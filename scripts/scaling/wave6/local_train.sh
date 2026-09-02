@@ -9,8 +9,8 @@
 #   [MORPH_MODE=fixed MORPH_COEFF=0.0] [PROJECT=local_w6]
 #   bash local_train.sh
 set -u
-REPO=/mnt/c/Users/smirn/Desktop/robot_learning_ip
-PY=~/jaxgpu/bin/python
+REPO=${REPO:-/mnt/c/Users/smirn/Desktop/robot_learning_ip}
+PY=${PY:-~/jaxgpu/bin/python}
 NAME=${NAME:?}; CLIPDIR=${CLIPDIR:?}
 ROBOTS=${ROBOTS:-unitree_h1:unitree_g1}
 LATENT=${LATENT:-0}; REPLACES=${REPLACES:-False}; HOLD=${HOLD:-1}

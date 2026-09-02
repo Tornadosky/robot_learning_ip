@@ -167,6 +167,14 @@ U.append(('''        policy_params = self.policy.init(policy_key, dummy_policy_j
             self.cotrain_recon_coeff = float(self.config.algorithm.cotrain_recon_coeff)
             self.cotrain_code_divisor = float(self.config.algorithm.cotrain_code_divisor)
             _init_path = str(self.config.algorithm.cotrain_init_encoder or "")
+            if _init_path and not os.path.exists(_init_path):
+                # A checkpoint stores the path it was trained with (e.g. Viper's);
+                # at evaluation the encoder weights come from the checkpoint
+                # itself, so a missing file is only fatal for training.
+                if str(getattr(self.config.runner, "mode", "train")) == "train" and not getattr(self.config.runner, "load_model", ""):
+                    raise FileNotFoundError(f"cotrain_init_encoder not found: {_init_path}")
+                rlx_logger.warning(f"cotrain: init file {_init_path} absent; relying on the checkpoint's encoder weights")
+                _init_path = ""
             if _init_path:
                 from loco_mjx.algorithms.urma2.mjx.fsq_cotrain import load_tokenizer_encoder_params
                 import flax.core
