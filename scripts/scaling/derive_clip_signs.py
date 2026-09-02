@@ -47,6 +47,8 @@ FAMILIES = {
     "talos": ("talos", "Talos"),
     "toddlerbot": ("toddlerbot", "ToddlerBot"),
     "h1v2": ("unitree_h1v2", "UnitreeH1v2"),
+    "apollo": ("apptronik_apollo", "Apollo"),
+    "gr1t2": ("fourier_gr1t2", "FourierGR1T2"),
 }
 
 
@@ -188,11 +190,15 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--robots", nargs="+", default=["h1", "g1", "booster_t1"])
     p.add_argument("--clip", default="dance2_subject4.npz")
+    p.add_argument("--clip-dir", type=Path, default=None, help="clip root (default external_data/amass_converted/LAFAN1)")
     p.add_argument("--frames", type=int, default=40)
     p.add_argument("--check", action="store_true",
                    help="compare against the tables in clip_reference.py")
     p.add_argument("--out", type=Path, default=None)
     args = p.parse_args()
+    if args.clip_dir is not None:
+        global CLIP_DIR
+        CLIP_DIR = args.clip_dir
 
     known = {}
     if args.check:

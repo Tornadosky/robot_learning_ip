@@ -37,6 +37,8 @@ ROBOT_TO_CLIP_SUBDIR = {
     "booster_t1": "BoosterT1", "t1": "BoosterT1",
     "atlas": "Atlas", "talos": "Talos", "toddlerbot": "ToddlerBot",
     "unitree_h1v2": "UnitreeH1v2", "h1v2": "UnitreeH1v2",
+    "at": "Atlas", "tl": "Talos", "tdlb": "ToddlerBot",
+    "apptronik_apollo": "Apollo", "apo": "Apollo", "fourier_gr1t2": "FourierGR1T2", "gr1t2": "FourierGR1T2",
 }
 
 
